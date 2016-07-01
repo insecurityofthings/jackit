@@ -17,8 +17,6 @@ class scanner:
     self.ping_payload = '0F:0F:0F:0F'.replace(':', '').decode('hex')
 
   def scan(self):
-    logging.info('starting scan')
-
     # Put the radio in promiscuous mode
     self.radio.enter_promiscuous_mode('')
     dwell_time = 0.1

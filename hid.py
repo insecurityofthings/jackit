@@ -96,22 +96,22 @@ class mouse:
     return p
 
   def serialize(self, p):
-    return str(bytearray(decrypt(p)))
+    return str(bytearray(self.decrypt(p)))
 
   def hid_decode(hid, meta):
-    if key in hid_map:
+    if key in self.hid_map:
       shift = 0
       if meta & 0x22:
         shift = 1
-      return hid_map[key][shift]
+      return self.hid_map[key][shift]
     else:
       return ''
 
   def checksum(self):
-    p[-1] = 0
-    for i in range(0, len(p) - 1):
-      p[-1] ^= p[i]
-    p[-1] = ~p[-1] & 0xff
+    self.payload[-1] = 0
+    for i in range(0, len(self.payload) - 1):
+      self.payload[-1] ^= self.payload[i]
+    self.payload[-1] = ~self.payload[-1] & 0xff
 
   def inc_sequence(self):
     if self.payload[4] == 255:
@@ -130,7 +130,7 @@ class mouse:
       self.payload[9] = 0
       return
 
-    for k, v in hid_map.iteritems():
+    for k, v in self.hid_map.iteritems():
       if v[0] == key:
         # clear special keys
         self.payload[7] = 0
@@ -146,7 +146,7 @@ class mouse:
     self.set_key(c)
     self.inc_sequence()
     self.checksum()
-    self.radio.transmit_payload(self.serialize(p), self.ack_timeout, self.retries)
+    self.radio.transmit_payload(self.serialize(self.payload), self.ack_timeout, self.retries)
 
   def send_attack(self, attack):
     for _ in range(3):
@@ -167,22 +167,22 @@ class mouse:
 
     self.inc_sequence()
     self.checksum()
-    self.radio.transmit_payload(self.serialize(p), self.ack_timeout, self.retries)
+    self.radio.transmit_payload(self.serialize(self.payload), self.ack_timeout, self.retries)
     self.transmit()
     
     time.sleep(0.2)
 
   def update(self, payload):
-    if len(payload) == 19 and p[1] == 0x90:
-      if (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
-        self.payload = payload[:]
+    if len(payload) == 19 and payload[1] == 0x90:
+      if (payload[0] == 0x08 or payload[0] == 0x0c) and payload[6] == 0x40:
+        self.payload = payload.tolist()
         self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.channels = [21, 23, 25, 46, 50, 56, 60, 72, 74, 78]
         self.pingable = False
-      elif p[0] == 0x0a:
-        p = decrypt(payload)
+      elif payload[0] == 0x0a:
+        p = self.decrypt(payload)
         if p[6] == 0x40:
-          self.payload = p
+          self.payload = p.tolist()
           self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
           self.channels = range(2, 84)
           self.pingable = True

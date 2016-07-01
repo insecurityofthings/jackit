@@ -22,13 +22,14 @@ sniff_timeout = 1.0
 
 # Enter main loop
 while True:
+  print 'scanning...'
   address, payload = scan.scan()
 
-  if len(payload) == 19 and p[1] == 0x90:
+  if len(payload) == 19 and payload[1] == 0x90:
 
     last_ping = time.time()
     last_packet = time.time()
-    scan.sniffer(address)
+    scan.sniff(address)
     mouse = hid.mouse(radio, address)
     mouse.update(payload)
 
