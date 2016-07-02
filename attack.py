@@ -43,7 +43,9 @@ class scanner:
   def hexify(self, data):
     return ':'.join('{:02X}'.format(x) for x in data)
 
-  def scan(self):
+  def scan(self, timeout=5.0):
+    devices = {}
+
     # Put the radio in promiscuous mode
     self.radio.enter_promiscuous_mode('')
     dwell_time = 0.1
@@ -53,8 +55,9 @@ class scanner:
 
     # Sweep through the self.channels and decode ESB packets in pseudo-promiscuous mode
     last_tune = time.time()
-    
-    while True:
+    total_time = time.time()
+
+    while time.time() - total_time < timeout:
 
       if len(self.channels) > 1 and time.time() - last_tune > dwell_time:
         self.channel_index = (self.channel_index + 1) % (len(self.channels))
@@ -64,8 +67,19 @@ class scanner:
       value = self.radio.receive_payload()
       if len(value) >= 5:
         address, payload = value[0:5], value[5:]
-        self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], self.hexify(address), self.hexify(payload)))
-        return [address, payload]
+        a = self.hexify(address)
+        self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], a, self.hexify(payload)))
+
+        if a in devices:
+          devices[a]['count'] += 1
+          if not self.channels[self.channel_index] in devices[a]['channels']:
+            devices[a]['channels'].append(self.channels[self.channel_index])
+          if len(payload) > len(devices[a]['payload']):
+            devices[a]['payload'] = payload
+        else:
+            devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
+
+    return devices
 
   def sniff(self, address):
     self.radio.enter_sniffer_mode(''.join(chr(b) for b in address[::-1]))
@@ -245,10 +259,7 @@ class mouse:
     self.radio.transmit_payload(self.serialize(self.payload), self.ack_timeout, self.retries)
 
   def send_attack(self, attack):
-    for _ in range(20):
-      self.inc_sequence()
-
-    for _ in range(3):
+    for _ in range(5):
       self.transmit()
 
     self.send_run()
@@ -331,7 +342,9 @@ def cli(debug, lowpower):
   # Enter main loop
   try:
     while True:
-      address, payload = scan.scan()
+      devices = scan.scan(10.0)
+
+      print devices
 
       if len(payload) == 19 and payload[1] == 0x90:
 
