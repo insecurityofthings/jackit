@@ -346,7 +346,14 @@ def cli(debug, lowpower):
     while True:
       devices = scan.scan(10.0)
 
-      print devices
+      click.clear()
+      print "\tADDRESS\t\tCHANNELS\t\tCOUNT\t\tPACKET"
+      idx = 0
+      for key, device in devices.iteritems():
+      	idx = idx + 1
+      	print "%d) \t %s \t %s \t %d \t %s" % (idx, key, ",".join(str(x) for x in device['channels']),device['count'], scan.hexify(device['payload']))
+
+
 
       #if len(payload) == 19 and payload[1] == 0x90:
 
