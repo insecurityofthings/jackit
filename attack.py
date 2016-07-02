@@ -378,8 +378,16 @@ def cli(debug, lowpower):
       print GR + "\n [+]" + W + " select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
             " separated by commas, or '%s': " % (G + 'all' + W),
       value = click.prompt('', default="all")
-      print value
-      
+      value = value.strip().lower()
+
+      if value == "all":
+        victims = devices[:]
+      else:
+        victims = []
+        for vic in value.split(","):
+          victims.append(pretty_devices[(int(vic)-1)])
+      print victims
+
       #if len(payload) == 19 and payload[1] == 0x90:
 
        # last_ping = time.time()
