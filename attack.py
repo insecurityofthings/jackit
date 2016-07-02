@@ -188,7 +188,7 @@ class mouse:
     # ...etc. There are more on http://www.freebsddiary.org/APC/usb_hid_usages.php
   }
 
-  def __init__(self, radio, address, payload, ack_timeout=250, retries=3):
+  def __init__(self, radio, address, payload, ack_timeout=50, retries=2):
     self.radio = radio
     self.address = address
     self.string_address = ':'.join('{:02X}'.format(b) for b in address)
