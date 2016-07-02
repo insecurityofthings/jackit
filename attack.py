@@ -362,7 +362,7 @@ def cli(debug, lowpower):
             key,
             ",".join(str(x) for x in device['channels']),
             device['count'],
-            device['timestamp'],
+            str(int(time.time() - device['timestamp'])),
             scan.hexify(device['payload'])
           ])
 
