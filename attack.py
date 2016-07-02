@@ -83,7 +83,7 @@ class scanner:
               self.devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
               self.devices[a]['timestamp'] = time.time()
     except RuntimeError:
-      pass
+      exit(-1)
     return self.devices
 
   def sniff(self, address):
@@ -317,11 +317,11 @@ def _debug(text):
 @click.command()
 @click.option('--debug', is_flag=True, help='Enable debug.')
 @click.option('--attack', default="calc.exe", help="String to use for the attack")
+@click.option('--attackfile', default="", type=click.Path(exists=True))
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-def cli(debug, attack, lowpower, interval):
+def cli(debug, attack, lowpower, interval, attackfile):
   enable_debug = debug
-  attack = attack + "\n"
 
   print """
      ____.              __   .___  __   
@@ -338,6 +338,12 @@ def cli(debug, attack, lowpower, interval):
   if debug:
     print O + "[W] " + W + "Debug is enabled"
 
+  if attackfile == "":
+    attack = attack + "\n"
+  else:
+    f = open(attackfile,'r')
+    attack = f.read()
+  
   #make sure we are root
   if os.getuid() != 0:
     print R + "[!] " + W + "You need to run as root!"
