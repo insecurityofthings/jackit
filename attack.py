@@ -252,11 +252,15 @@ class mouse:
         self.payload[9] = k
         return
 
+  def wait(self):
+    if self.encrypted: time.sleep(0.01)
+
   def transmit(self, c=''):
     self.set_key(c)
     self.inc_sequence()
     self.checksum()
     self.radio.transmit_payload(self.serialize(self.payload), self.ack_timeout, self.retries)
+    self.wait()
 
   def send_attack(self, attack):
     for _ in range(5):
@@ -299,7 +303,6 @@ class mouse:
           self.channels = range(2, 84)
           self.pingable = True
           self.encrypted = True
-
 
 def _debug(debug, text):
   if debug:
