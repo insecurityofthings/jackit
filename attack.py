@@ -348,8 +348,9 @@ def cli(debug, attack, lowpower, interval, attackfile):
   try:
     radio = nrf24.nrf24(0)
   except Exception as e:
-    print e
     if e.__str__() == "Cannot find USB dongle.":
+      print R + "[!] " + W + "Cannot find Crazy PA USB dongle."
+      print R + "[!] " + W + "Please make sure you have it preloaded with the mousejack firmware."
       exit(-1)
 
   # Assume Crazyradio PA
