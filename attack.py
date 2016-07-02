@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time, logging
+import time
 from lib import nrf24
 import os
 import click
@@ -17,8 +17,6 @@ C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
 
 __version__ = 0.01
-
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s.%(msecs)03d]  %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 
 enable_debug = False
 
@@ -39,8 +37,6 @@ class scanner:
     self.ping_payload = '0F:0F:0F:0F'.replace(':', '').decode('hex')
 
   def _debug(self, text):
-    W = '\033[0m'  # white (normal)
-    P = '\033[35m'  # purple
     if self.debug:
       print  P + "[D] " + W + text
 
@@ -290,11 +286,13 @@ def _debug(text):
 
 @click.command()
 @click.option('--debug', is_flag=True, help='Enable debug.')
-def cli(debug):
+#@click.option('--attack', default="calc.exe\n", help="String to use for the attack")
+@click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
+def cli(debug, lowpower):
   enable_debug = debug
   attack = "calc.exe\n"
 
-  print "MouseSomethingOrOther version %0.2f" % __version__
+  print "Mousite version %0.2f" % __version__
   if debug:
     print O + "[W] " + W + "Debug is enabled"
 
@@ -307,7 +305,10 @@ def cli(debug):
   radio = nrf24.nrf24(0)
 
   # Assume Crazyradio PA
-  radio.enable_lna()
+  if lowpower:
+    print G + "[+] " + W + "Low power mode enabled"
+  else:
+    radio.enable_lna()
 
   # Create scanner instance
   scan = scanner(radio=radio, debug=debug)
