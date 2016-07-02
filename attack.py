@@ -302,10 +302,6 @@ class mouse:
           self.encrypted = True
 
 
-def attack_clean(text):
-  text = text.replace("\n","\n")
-  return text
-
 def _debug(debug, text):
   if debug:
     print  P + "[D] " + W + text
@@ -334,12 +330,12 @@ def cli(debug, attack, lowpower, interval, attackfile):
     print O + "[W] " + W + "Debug is enabled"
 
   if attackfile == "":
-    attack = attack + "\n"
+    attack = attack.decode('string_escape')
   else:
     f = open(attackfile,'r')
     attack = f.read()
 
-  _debug(debug,"Attack is: " + attack)
+  _debug(debug,"Attack is: " + attack.encode('string_escape'))
   
   #make sure we are root
   if os.getuid() != 0:
