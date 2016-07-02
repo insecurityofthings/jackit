@@ -310,9 +310,13 @@ class mouse:
           self.encrypted = True
 
 
-def _debug(text):
+def attack_clean(text):
+  text = text.replace("\n","\n")
+  return text
+
+def _debug(debug, text):
   if debug:
-    print  P + "[D]" + W + text
+    print  P + "[D] " + W + text
 
 @click.command()
 @click.option('--debug', is_flag=True, help='Enable debug.')
@@ -321,7 +325,6 @@ def _debug(text):
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
 def cli(debug, attack, lowpower, interval, attackfile):
-  enable_debug = debug
 
   print """
      ____.              __   .___  __   
@@ -343,6 +346,8 @@ def cli(debug, attack, lowpower, interval, attackfile):
   else:
     f = open(attackfile,'r')
     attack = f.read()
+
+  _debug(debug,"Attack is: " + attack)
   
   #make sure we are root
   if os.getuid() != 0:
