@@ -253,7 +253,7 @@ class mouse:
         return
 
   def wait(self):
-    if self.encrypted: time.sleep(0.01)
+    if self.encrypted: time.sleep(0.005)
 
   def transmit(self, c=''):
     self.set_key(c)
