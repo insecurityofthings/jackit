@@ -369,7 +369,16 @@ def cli(debug, lowpower):
 
         print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","LAST SEEN","PACKET"])
     except KeyboardInterrupt:
-      print '\n Enter list of devices to attack'
+      print "\n"
+
+      if len(devices) == 0:
+        print R + "[!] " + W + "No devices found please try again..."
+        exit(-1)
+      
+      print GR + "\n [+]" + W + " select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
+            " separated by commas, or '%s': " % (G + 'all' + W),
+      value = click.prompt('', default="all")
+      print value
       
       #if len(payload) == 19 and payload[1] == 0x90:
 
