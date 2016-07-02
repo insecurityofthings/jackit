@@ -28,7 +28,8 @@ class scanner:
     self.channels = range(2, 84)
     self.channel_index = 0
     self.debug  = debug
-
+    self.devices = {}
+    
     # Format the ACK timeout and auto retry values
     self.ack_timeout = int(ack_timeout / 250) - 1
     self.ack_timeout = max(0, min(ack_timeout, 15))
@@ -44,8 +45,6 @@ class scanner:
     return ':'.join('{:02X}'.format(x) for x in data)
 
   def scan(self, timeout=5.0):
-    devices = {}
-
     # Put the radio in promiscuous mode
     self.radio.enter_promiscuous_mode('')
     dwell_time = 0.1
@@ -70,16 +69,16 @@ class scanner:
         a = self.hexify(address)
         self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], a, self.hexify(payload)))
 
-        if a in devices:
-          devices[a]['count'] += 1
-          if not self.channels[self.channel_index] in devices[a]['channels']:
-            devices[a]['channels'].append(self.channels[self.channel_index])
-          if len(payload) > len(devices[a]['payload']):
-            devices[a]['payload'] = payload
+        if a in self.devices:
+          self.devices[a]['count'] += 1
+          if not self.channels[self.channel_index] in self.devices[a]['channels']:
+            self.devices[a]['channels'].append(self.channels[self.channel_index])
+          if len(payload) > len(self.devices[a]['payload']):
+            self.devices[a]['payload'] = payload
         else:
-            devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
+            self.devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
 
-    return devices
+    return self.devices
 
   def sniff(self, address):
     self.radio.enter_sniffer_mode(''.join(chr(b) for b in address[::-1]))
