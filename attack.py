@@ -72,13 +72,14 @@ class scanner:
 
         if a in self.devices:
           self.devices[a]['count'] += 1
+          self.devices[a]['timestamp'] = time.strftime('%H:%M:%S')
           if not self.channels[self.channel_index] in self.devices[a]['channels']:
             self.devices[a]['channels'].append(self.channels[self.channel_index])
           if len(payload) > len(self.devices[a]['payload']):
             self.devices[a]['payload'] = payload
         else:
             self.devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
-
+            self.devices[a]['timestamp'] = time.strftime('%H:%M:%S')
     return self.devices
 
   def sniff(self, address):
