@@ -266,7 +266,7 @@ class mouse:
     self.radio.transmit_payload(self.serialize(self.payload), self.ack_timeout, self.retries)
 
   def send_attack(self, attack):
-    for _ in range(10):
+    for _ in range(25):
       self.transmit()
       time.sleep(0.005)
 
