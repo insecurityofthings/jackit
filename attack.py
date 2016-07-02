@@ -389,7 +389,7 @@ def cli(debug, lowpower, interval):
 
         print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","SEEN","PACKET"])
     except KeyboardInterrupt:
-      print "\n"
+      print ""
 
     if 'devices' not in locals() or len(devices) == 0:
       print R + "[!] " + W + "No devices found please try again..."
@@ -458,6 +458,8 @@ def cli(debug, lowpower, interval):
         radio.set_channel(channel)
         print GR + '[+] ' + W + 'Sending attack on channel %d' % (channel)
         device.send_attack(attack)
+
+    print GR + '\n[+] ' + W + "All attacks completed\n"
 
   except KeyboardInterrupt:
     print '\n ' + R + '(^C)' + O + ' interrupted\n'
