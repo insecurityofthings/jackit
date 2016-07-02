@@ -349,22 +349,21 @@ def cli(debug, lowpower):
       click.clear()
       print GR + "[+] " + W + "Scanning every 5s " + G + "CTRL-C " + W + "when ready."
       print ""
-      #print "   ADDRESS\tCHANNELS\tCOUNT\tPACKET"
       
       idx = 0
       pretty_devices = []
       for key, device in devices.iteritems():
       	idx = idx + 1
       	pretty_devices.append([
-      		idx, 
-      		key, 
+      		idx,
+      		key,
       		",".join(str(x) for x in device['channels']),
-      		device['count'], 
+      		device['count'],
       		scan.hexify(device['payload'])
       	])
 
 
-      print tabulate.tabulate(pretty_devices, headers=[" ","ADDRESS","CHANNELS","COUNT","PACKET"])
+      print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","PACKET"])
       #if len(payload) == 19 and payload[1] == 0x90:
 
        # last_ping = time.time()
