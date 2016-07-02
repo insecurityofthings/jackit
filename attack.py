@@ -319,7 +319,7 @@ def _debug(text):
 @click.option('--attack', default="calc.exe", help="String to use for the attack")
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-def cli(debug, lowpower, interval):
+def cli(debug, attack, lowpower, interval):
   enable_debug = debug
   attack = attack + "\n"
 
