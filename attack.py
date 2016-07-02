@@ -344,10 +344,11 @@ def cli(debug, lowpower):
   # Enter main loop
   try:
     while True:
-      devices = scan.scan(10.0)
+      devices = scan.scan(5.0)
 
       click.clear()
-      print "\tADDRESS\t\tCHANNELS\t\tCOUNT\t\tPACKET"
+      print GR + "[+] " + W + "Scanning every 5s " + G + "CTRL-C " + W + " when ready."
+      print "\tADDRESS\tCHANNELS\tCOUNT\tPACKET"
       idx = 0
       for key, device in devices.iteritems():
       	idx = idx + 1
