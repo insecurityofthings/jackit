@@ -8,6 +8,7 @@ import click
 import tabulate
 
 __version__ = 0.01
+__authors__ = "phikshun, infamy"
 
 #some console colours
 W = '\033[0m'  # white (normal)
@@ -343,27 +344,31 @@ def cli(debug, lowpower):
 
   # Enter main loop
   try:
-    while True:
-      devices = scan.scan(5.0)
+    try:
+      while True:
+        devices = scan.scan(5.0)
 
-      click.clear()
-      print GR + "[+] " + W + "Scanning every 5s " + G + "CTRL-C " + W + "when ready."
-      print ""
+        click.clear()
+        print GR + "[+] " + W + "Scanning every 5s " + G + "CTRL-C " + W + "when ready."
+        print ""
+        
+        idx = 0
+        pretty_devices = []
+        for key, device in devices.iteritems():
+          idx = idx + 1
+          pretty_devices.append([
+            idx,
+            key,
+            ",".join(str(x) for x in device['channels']),
+            device['count'],
+            scan.hexify(device['payload'])
+          ])
+
+
+        print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","PACKET"])
+    except KeyboardInterrupt:
+      print '\n Enter list of devices to attack'
       
-      idx = 0
-      pretty_devices = []
-      for key, device in devices.iteritems():
-      	idx = idx + 1
-      	pretty_devices.append([
-      		idx,
-      		key,
-      		",".join(str(x) for x in device['channels']),
-      		device['count'],
-      		scan.hexify(device['payload'])
-      	])
-
-
-      print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","PACKET"])
       #if len(payload) == 19 and payload[1] == 0x90:
 
        # last_ping = time.time()
