@@ -265,6 +265,7 @@ class mouse:
     self.send_run()
     for c in attack:
       self.transmit(c)
+      self.transmit()
     
     self.transmit()
 
