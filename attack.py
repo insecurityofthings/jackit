@@ -267,8 +267,9 @@ class mouse:
     for c in attack:
       self.transmit(c)
       time.sleep(0.015)
-      self.transmit()
-      time.sleep(0.015)
+    
+    self.transmit()
+    time.sleep(0.015)
 
   def send_run(self):
     self.payload[6] = 67
