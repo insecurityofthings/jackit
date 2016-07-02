@@ -73,14 +73,14 @@ class scanner:
 
         if a in self.devices:
           self.devices[a]['count'] += 1
-          self.devices[a]['timestamp'] = time.strftime('%H:%M:%S')
+          self.devices[a]['timestamp'] = time.time()
           if not self.channels[self.channel_index] in self.devices[a]['channels']:
             self.devices[a]['channels'].append(self.channels[self.channel_index])
           if len(payload) > len(self.devices[a]['payload']):
             self.devices[a]['payload'] = payload
         else:
             self.devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
-            self.devices[a]['timestamp'] = time.strftime('%H:%M:%S')
+            self.devices[a]['timestamp'] = time.time()
     return self.devices
 
   def sniff(self, address):
@@ -362,12 +362,12 @@ def cli(debug, lowpower):
             key,
             ",".join(str(x) for x in device['channels']),
             device['count'],
-            device['timestamp'],
+            str(int(time.time() - device['timestamp'])) + 's ago',
             scan.hexify(device['payload'])
           ])
 
 
-        print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","LAST SEEN","PACKET"])
+        print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","SEEN","PACKET"])
     except KeyboardInterrupt:
       print "\n"
 
