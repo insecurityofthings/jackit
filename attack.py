@@ -6,6 +6,8 @@ from lib import nrf24
 import os
 import click
 
+__version__ = 0.01
+
 #some console colours
 W = '\033[0m'  # white (normal)
 R = '\033[31m'  # red
@@ -15,8 +17,6 @@ B = '\033[34m'  # blue
 P = '\033[35m'  # purple
 C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
-
-__version__ = 0.01
 
 enable_debug = False
 
@@ -163,7 +163,9 @@ class mouse:
     0x43:  ['[F10]', '[F10]'],
     0x44:  ['[F11]', '[F11]'],
     0x45:  ['[F12]', '[F12]'],
-    0x46:  ['[PrintScr]', '[PrintScr]']
+    0x46:  ['[PrintScr]', '[PrintScr]'],
+    0x47:  ['[ScrollLock]','[ScrollLock]'],
+    0x48:  ['[NumLock]','[NumLock]']
     # ...etc. There are more on http://www.freebsddiary.org/APC/usb_hid_usages.php
   }
 
@@ -369,7 +371,7 @@ def cli(debug, lowpower):
         d_mouse.send_attack(attack)
   except KeyboardInterrupt:
     print '\n ' + R + '(^C)' + O + ' interrupted\n'
-
+    print "[-] Quitting"
 
 if __name__ == '__main__':
   cli()
