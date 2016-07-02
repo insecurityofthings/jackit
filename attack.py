@@ -342,7 +342,12 @@ def cli(debug, attack, lowpower, interval, attackfile):
     exit(-1)
 
   # Initialize the radio
-  radio = nrf24.nrf24(0)
+  try:
+    radio = nrf24.nrf24(0)
+  except Exception as e:
+    print e
+    if e.__str__() == "Cannot find USB dongle.":
+      exit(-1)
 
   # Assume Crazyradio PA
   if lowpower:
