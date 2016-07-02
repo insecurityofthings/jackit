@@ -267,9 +267,10 @@ class mouse:
       self.transmit()
 
     self.send_run()
-    for c in attack:
-      self.transmit(c)
-      self.transmit()
+    with click.progressbar(attack) as bar:
+      for c in bar:
+        self.transmit(c)
+        self.transmit()
     
     self.transmit()
 
