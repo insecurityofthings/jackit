@@ -362,11 +362,12 @@ def cli(debug, lowpower):
             key,
             ",".join(str(x) for x in device['channels']),
             device['count'],
+            device['timestamp'],
             scan.hexify(device['payload'])
           ])
 
 
-        print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","PACKET"])
+        print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","LAST SEEN","PACKET"])
     except KeyboardInterrupt:
       print '\n Enter list of devices to attack'
       
