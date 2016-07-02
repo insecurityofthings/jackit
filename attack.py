@@ -316,12 +316,12 @@ def _debug(text):
 
 @click.command()
 @click.option('--debug', is_flag=True, help='Enable debug.')
-#@click.option('--attack', default="calc.exe\n", help="String to use for the attack")
+@click.option('--attack', default="calc.exe", help="String to use for the attack")
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
 def cli(debug, lowpower, interval):
   enable_debug = debug
-  attack = "calc.exe\n"
+  attack = attack + "\n"
 
   print """
      ____.              __   .___  __   
