@@ -5,6 +5,7 @@ import time
 from lib import nrf24
 import os
 import click
+import tabulate
 
 __version__ = 0.01
 
@@ -346,15 +347,24 @@ def cli(debug, lowpower):
       devices = scan.scan(5.0)
 
       click.clear()
-      print GR + "[+] " + W + "Scanning every 5s " + G + "CTRL-C " + W + " when ready."
-      print "\tADDRESS\tCHANNELS\tCOUNT\tPACKET"
+      print GR + "[+] " + W + "Scanning every 5s " + G + "CTRL-C " + W + "when ready."
+      print ""
+      #print "   ADDRESS\tCHANNELS\tCOUNT\tPACKET"
+      
       idx = 0
+      pretty_devices = []
       for key, device in devices.iteritems():
       	idx = idx + 1
-      	print "%d) \t %s \t %s \t %d \t %s" % (idx, key, ",".join(str(x) for x in device['channels']),device['count'], scan.hexify(device['payload']))
+      	pretty_devices.append([
+      		idx, 
+      		key, 
+      		",".join(str(x) for x in device['channels']),
+      		device['count'], 
+      		scan.hexify(device['payload'])
+      	])
 
 
-
+      print tabulate.tabulate(pretty_devices, headers=[" ","ADDRESS","CHANNELS","COUNT","PACKET"])
       #if len(payload) == 19 and payload[1] == 0x90:
 
        # last_ping = time.time()
