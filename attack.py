@@ -348,40 +348,40 @@ def cli(debug, lowpower):
 
       print devices
 
-      if len(payload) == 19 and payload[1] == 0x90:
+      #if len(payload) == 19 and payload[1] == 0x90:
 
-        last_ping = time.time()
-        last_packet = time.time()
-        scan.sniff(address)
-        d_mouse = mouse(radio, address)
-        d_mouse.update(payload)
+       # last_ping = time.time()
+        #last_packet = time.time()
+        #scan.sniff(address)
+        #d_mouse = mouse(radio, address)
+        #d_mouse.update(payload)
 
-        while time.time() - last_packet > sniff_timeout:
+        #while time.time() - last_packet > sniff_timeout:
           
           # Follow the target device if it changes channels
-          if time.time() - last_ping > channel_timeout and d_mouse.pingable:
-            if scan.follow():
-              last_ping = time.time()
+         # if time.time() - last_ping > channel_timeout and d_mouse.pingable:
+          #  if scan.follow():
+           #   last_ping = time.time()
 
           # Receive payloads
-          value = radio.receive_payload()
-          if value[0] == 0:
+          #value = radio.receive_payload()
+          #if value[0] == 0:
 
             # Reset the follow timer
-            last_ping = time.time()
+            #last_ping = time.time()
 
-            if len(payload) == 19 and p[1] == 0x90:
+            #if len(payload) == 19 and p[1] == 0x90:
               
               # Reset the packet timer
-              last_packet = time.time()
+             # last_packet = time.time()
 
               # Split the payload from the status byte
-              payload = value[1:]
+              #payload = value[1:]
 
               # Update the payload
-              mouse_update(payload)
+              #mouse_update(payload)
         
-        d_mouse.send_attack(attack)
+        #d_mouse.send_attack(attack)
   except KeyboardInterrupt:
     print '\n ' + R + '(^C)' + O + ' interrupted\n'
     print "[-] Quitting"
