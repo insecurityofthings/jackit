@@ -473,7 +473,7 @@ def confirmroot():
     # make sure we are root
     if os.getuid() != 0:
         print R + "[!] " + W + "ERROR: You need to run as root!"
-        print R + "[!] " + W + "login as root (su root) or try sudo ./attack.py"
+        print R + "[!] " + W + "login as root (su root) or try sudo ./jackit.py"
         exit(-1)
 
 @click.command()
