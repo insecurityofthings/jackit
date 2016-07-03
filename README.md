@@ -14,15 +14,15 @@ After installing the firmware, you can install the Python 2 requirements via:
 sudo pip install -r requirements.txt
 ```
 
-Once your CrazyRadio PA is ready, you can launch the attack with:
+Once your CrazyRadio PA is ready, you can launch JackIt via:
 
 ```
 sudo ./attack.py
 ```
 
-Let the script run and detect the nearby devices, then press Ctrl-C to start your attack. The workflow is similar to Wifite. By default, it will inject the following sequence: Meta+R, then "calc.exe" and ENTER. You can use the --attack or --attackfile options to override the default attack sequence.
+Let the script run and detect the nearby devices, then press Ctrl-C to start your attack. The workflow is similar to Wifite. By default, it will only monitor for devices. If you would like to inject, specify a Duckyscript payload file using --attack. The payload should be in plain text, not compiled using the Duckyscript encoder.
 
-And yes, we are working on duckyscript compatibility.
+If you have no idea what Duckyscript is, see the [Hak5 USB Rubber Ducky Wiki](https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Duckyscript).
 
 ## Who
 
