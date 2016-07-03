@@ -6,7 +6,6 @@ from lib import nrf24
 import os
 import click
 import tabulate
-import hidscript
 
 __version__ = 0.01
 __authors__ = "phikshun, infamy"
