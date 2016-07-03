@@ -366,12 +366,13 @@ class NordicGenericHID:
         for _ in range(5):
             self.send_key()
 
-        for c in attack:
-            if c['hid']:
-                self.send_key(c)
-                self.send_key()
-            elif c['sleep']:
-                time.sleep(int(c['sleep']) / 1000)
+        with click.progressbar(attack) as bar:
+            for c in bar:
+                if c['hid']:
+                    self.send_key(c)
+                    self.send_key()
+                elif c['sleep']:
+                    time.sleep(int(c['sleep']) / 1000)
         
         self.send_key()
 
