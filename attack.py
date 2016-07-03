@@ -374,15 +374,7 @@ def _debug(debug, text):
     if debug:
         print  P + "[D] " + W + text
 
-@click.command()
-@click.option('--debug', is_flag=True, help='Enable debug.')
-@click.option('--attack', default="calc.exe\n", help="String to use for the attack")
-@click.option('--attackfile', default="", type=click.Path())
-@click.option('--scriptfile', default="", type=click.Path())
-@click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
-@click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-def cli(debug, attack, lowpower, interval, attackfile, scriptfile):
-
+def banner():
     print """
      ____.              __   .___  __   
     |    |____    ____ |  | _|   |/  |_ 
@@ -395,6 +387,23 @@ def cli(debug, attack, lowpower, interval, attackfile, scriptfile):
     print "Created by %s" % __authors__
     print ""
 
+def confirmroot():
+    # make sure we are root
+    if os.getuid() != 0:
+        print R + "[!] " + W + "You need to run as root!"
+        exit(-1)
+
+@click.command()
+@click.option('--debug', is_flag=True, help='Enable debug.')
+@click.option('--attack', default="calc.exe\n", help="String to use for the attack")
+@click.option('--attackfile', default="", type=click.Path())
+@click.option('--scriptfile', default="", type=click.Path())
+@click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
+@click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
+def cli(debug, attack, lowpower, interval, attackfile, scriptfile):
+
+    banner()
+
     if debug:
         print O + "[W] " + W + "Debug is enabled"
 
@@ -406,10 +415,7 @@ def cli(debug, attack, lowpower, interval, attackfile, scriptfile):
 
     _debug(debug,"Attack is: " + attack.encode('string_escape'))
     
-    #make sure we are root
-    if os.getuid() != 0:
-        print R + "[!] " + W + "You need to run as root!"
-        exit(-1)
+    confirmroot()
 
     # Initialize the radio
     try:
