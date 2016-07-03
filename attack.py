@@ -472,7 +472,8 @@ def banner():
 def confirmroot():
     # make sure we are root
     if os.getuid() != 0:
-        print R + "[!] " + W + "You need to run as root!"
+        print R + "[!] " + W + "ERROR: You need to run as root!"
+        print R + "[!] " + W + "login as root (su root) or try sudo ./attack.py"
         exit(-1)
 
 @click.command()
@@ -483,20 +484,20 @@ def confirmroot():
 def cli(debug, script, lowpower, interval):
 
     banner()
+    confirmroot()
 
     if debug:
         print O + "[W] " + W + "Debug is enabled"
 
     if script == "":
         print R + '[!] ' + W + "You must supply a ducky script using --script <filename>"
-        exit(-1)
+        print R + '[!] ' + W + "Attacks are disabled."
+        attack = ""
     else:
         f = open(script,'r')
         parser = DuckyParser(f.read())
         attack = parser.parse()
         
-    confirmroot()
-
     # Initialize the radio
     try:
         radio = nrf24.nrf24(0)
@@ -547,6 +548,10 @@ def cli(debug, script, lowpower, interval):
 
         if 'devices' not in locals() or len(devices) == 0:
             print R + "[!] " + W + "No devices found please try again..."
+            exit(-1)
+
+        if attack == "":
+            print R + "[!] " + W + "No attack script was provided..."
             exit(-1)
         
         print GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
