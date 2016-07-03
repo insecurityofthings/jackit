@@ -318,6 +318,8 @@ class MicrosoftMouseEncryptHID(MicrosoftMouseDefaultHID):
 class MicrosoftKeyboardEncryptHID(MicrosoftMouseEncryptHID):
     def configure(self):
         self.device_type = 'Microsoft Keyboard XOR-Encrypted'
+        # first decrypt the packet
+        self.payload = self.xor_crypt(self.payload)
         self.payload = self.payload.tolist()
         # clear sequence number
         self.payload[4:6] = [0, 0]
