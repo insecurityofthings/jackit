@@ -521,7 +521,7 @@ def cli(debug, attack, lowpower, interval, attackfile, scriptfile):
                     print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (scan.hexify(address), device.device_type, channel)
                     device.send_attack(attack)
             else:
-                print R + '[-] ' + W + "Target %s is not injectable or not a mouse. Skipping..." % (scan.hexify(address))
+                print R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (scan.hexify(address))
                 continue
 
         print GR + '\n[+] ' + W + "All attacks completed\n"
