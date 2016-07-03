@@ -87,29 +87,6 @@ class NordicScanner:
     def sniff(self, address):
         self.radio.enter_sniffer_mode(''.join(chr(b) for b in address[::-1]))
 
-    def follow(self):
-        # First try pinging on the active channel
-        if not self.radio.transmit_payload(self.ping_payload, self.ack_timeout, self.retries):
-
-            # Ping failed on the active channel, so sweep through all available channels
-            for _ in range(len(self.channels)):
-                self.channel_index = (self.channel_index + 1) % (len(self.channels))
-                self.radio.set_channel(self.channels[self.channel_index])
-                
-                if self.radio.transmit_payload(self.ping_payload, self.ack_timeout, self.retries):
-                    # Ping successful, exit out of the ping sweep
-                    self._debug('Ping success on channel {0}'.format(common.channels[channel_index]))
-                    return True
-
-            # Ping sweep failed
-            self._debug('Unable to ping {0}'.format(address_string))
-            return False
-
-        # Ping succeeded on the active channel
-        else:
-            self._debug('Ping success on channel {0}'.format(common.channels[channel_index]))
-            return True
-
 
 class NordicGenericHID:
     hid_map = {
@@ -247,6 +224,9 @@ class NordicGenericHID:
 
     def transmit(self, c=''):
         self.set_key(c)
+        self.raw_transmit()
+
+    def raw_transmit(self):
         self.inc_sequence()
         self.checksum()
         self.radio.transmit_payload(self.serialize_payload(self.payload), self.ack_timeout, self.retries)
@@ -264,8 +244,14 @@ class NordicGenericHID:
         
         self.transmit()
 
-    def send_run(self):
+    def set_run_key(self):
         raise NotImplementedError('Not implemented in generic HID')
+
+    def send_run(self):
+        self.set_run_key()
+        self.raw_transmit()
+        self.transmit()
+        time.sleep(0.2)
 
 
 class MicrosoftMouseDefaultHID(NordicGenericHID):
@@ -302,17 +288,11 @@ class MicrosoftMouseDefaultHID(NordicGenericHID):
                 self.payload[9] = k
                 return
 
-    def send_run(self):
+    def set_run_key(self):
         self.payload[6] = 67
         self.payload[17] = 0
         self.payload[7] = 0x08
         self.payload[9] = 0x15
-
-        self.inc_sequence()
-        self.checksum()
-        self.radio.transmit_payload(self.serialize_payload(self.payload), self.ack_timeout, self.retries)
-        self.transmit()
-        time.sleep(0.2)
 
 
 class MicrosoftMouseEncryptHID(MicrosoftMouseDefaultHID):
@@ -367,17 +347,11 @@ class MicrosoftKeyboardEncryptHID(MicrosoftMouseEncryptHID):
                 self.payload[9] = k
                 return
 
-    def send_run(self):
+    def set_run_key(self):
         self.payload[6] = 67
         self.payload[14] = 0
         self.payload[7] = 0x08
         self.payload[9] = 0x15
-
-        self.inc_sequence()
-        self.checksum()
-        self.radio.transmit_payload(self.serialize_payload(self.payload), self.ack_timeout, self.retries)
-        self.transmit()
-        time.sleep(0.2)
 
 
 def fingerprint_device(r, a, p):
