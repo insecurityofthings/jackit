@@ -353,7 +353,7 @@ class MicrosoftKeyboardEncryptHID(MicrosoftMouseEncryptHID):
             self.payload[7] = 0
             self.payload[9] = 0
             return
-        
+
         # now send key, with shift if necessary
         for k, v in self.hid_map.iteritems():
             if v[0] == key:
@@ -513,7 +513,6 @@ def cli(debug, attack, lowpower, interval, attackfile, scriptfile):
             address = target['address']
 
             scan.sniff(address)
-            print repr(address)
             device = fingerprint_device(radio, address, payload)
             
             if device:
