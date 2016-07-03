@@ -17,7 +17,7 @@ sudo pip install -r requirements.txt
 Once your CrazyRadio PA is ready, you can launch JackIt via:
 
 ```
-sudo ./attack.py
+sudo ./jackit.py
 ```
 
 Let the script run and detect the nearby devices, then press Ctrl-C to start your attack. The workflow is similar to Wifite. By default, it will only monitor for devices. If you would like to inject, specify a Duckyscript payload file using --attack. The payload should be in plain text, not compiled using the Duckyscript encoder.
