@@ -536,12 +536,15 @@ def cli(debug, script, lowpower, interval):
                 pretty_devices = []
                 for key, device in devices.iteritems():
                     idx = idx + 1
+                    seconds = int(time.time() - device['timestamp'])
+                    minutes, seconds = divmod(seconds, 60)
+                    hours, minutes = divmod(minutes, 60)
                     pretty_devices.append([
                         idx,
                         key,
                         ",".join(str(x) for x in device['channels']),
                         device['count'],
-                        str(int(time.time() - device['timestamp'])) + 's ago',
+                        ("%d:%02d:%02d" % (hours, minutes, seconds)) + ' ago',
                         scan.hexify(device['payload'])
                     ])
 
