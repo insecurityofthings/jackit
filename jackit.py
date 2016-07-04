@@ -375,7 +375,7 @@ class NordicGenericHID:
                     self.send_key(c)
                     self.send_key()
                 elif c['sleep']:
-                    time.sleep(int(c['sleep']) / 1000)
+                    time.sleep(int(c['sleep']) / 1000.0)
 
         self.send_key()
 
