@@ -25,7 +25,7 @@ GR = '\033[37m'  # gray
 enable_debug = False
 
 
-class DuckyParser:
+class DuckyParser(object):
     hid_map = {
         'a':            [4, False],
         'A':            [4, True],
@@ -233,7 +233,7 @@ class DuckyParser:
         return entries
 
 
-class NordicScanner:
+class NordicScanner(object):
 
     def __init__(self, radio, ack_timeout=5, retries=1, debug=False):
         self.radio = radio
@@ -287,8 +287,8 @@ class NordicScanner:
                         if len(payload) > len(self.devices[a]['payload']) and len(payload) < 20:
                             self.devices[a]['payload'] = payload
                     else:
-                            self.devices[a] = {'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload}
-                            self.devices[a]['timestamp'] = time.time()
+                        self.devices[a] = {'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload}
+                        self.devices[a]['timestamp'] = time.time()
         except RuntimeError:
             exit(-1)
         return self.devices
@@ -297,7 +297,7 @@ class NordicScanner:
         self.radio.enter_sniffer_mode(''.join(chr(b) for b in address[::-1]))
 
 
-class NordicGenericHID:
+class NordicGenericHID(object):
 
     def __init__(self, radio, address, payload):
         self.radio = radio
