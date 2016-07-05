@@ -26,6 +26,8 @@ enable_debug = False
 
 
 class DuckyParser(object):
+    ''' Help map ducky like script to HID codes to be sent '''
+    
     hid_map = {
         'a':            [4, False],
         'A':            [4, True],
