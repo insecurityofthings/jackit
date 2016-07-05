@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time
 import datetime
-from lib import nrf24
 import os
+import time
 import click
 import tabulate
+from lib import nrf24
+
 
 __version__ = 0.01
 __authors__ = "phikshun, infamy"
@@ -483,11 +484,11 @@ def _debug(debug, text):
 
 
 def banner():
-    print """
+    print r"""
      ____.              __   .___  __
     |    |____    ____ |  | _|   |/  |_
-    |    \__  \ _/ ___\|  |/ /   \   __\\
-/\__|    |/ __ \\\\  \___|    <|   ||  |
+    |    \__  \ _/ ___\|  |/ /   \   __\
+/\__|    |/ __ \\  \___|    <|   ||  |
 \________(____  /\___  >__|_ \___||__|
               \/     \/     \/          """
 
