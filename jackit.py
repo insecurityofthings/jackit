@@ -320,9 +320,17 @@ class NordicScanner(object):
             # Most likely an XOR encrypted Microsoft keyboard
             return MS_KEYBOARD_ENC
         elif len(p) == 10 and p[0] == 0 and p[1] == 0xC2:
+            # Definitely a logitech mouse movement packet
             return LOG_MOUSE
         elif len(p) == 22 and p[0] == 0 and p[1] == 0xD3:
+            # Definitely a logitech keystroke packet
             return LOG_KEYBOARD
+        elif len(p) == 5 and p[0] == 0 and p[1] == 0x40:
+            # Most likely logitech keepalive packet
+            return LOG_MOUSE
+        elif len(p) == 10 and p[0] == 0 and p[1] == 0x4F:
+            # Most likely logitech sleep timer packet
+            return LOG_MOUSE
         else:
             return 0
 
