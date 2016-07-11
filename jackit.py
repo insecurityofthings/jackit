@@ -419,8 +419,12 @@ class MicrosoftHID(object):
             self.payload[9] = key['hid']
             if key['meta']:
                 self.payload[7] |= 0x08
+            if key['alt']:
+                self.payload[7] |= 0x04
             if key['shift']:
                 self.payload[7] |= 0x02
+            if key['ctrl']:
+                self.payload[7] |= 0x01
 
     def clear_payload(self):
         if self.device_type == 1:
@@ -508,8 +512,12 @@ class LogitechHID(object):
         self.payload[3] = key['hid']
         if key['meta']:
             self.payload[2] |= 0x08
+        if key['alt']:
+            self.payload[2] |= 0x04
         if key['shift']:
             self.payload[2] |= 0x02
+        if key['ctrl']:
+            self.payload[2] |= 0x01
 
     def clear_payload(self):
         self.payload = [0, 0xC1, 0, 0, 0, 0, 0, 0, 0, 0]
