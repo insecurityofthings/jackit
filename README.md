@@ -20,7 +20,7 @@ Once your CrazyRadio PA is ready, you can launch JackIt via:
 sudo ./jackit.py
 ```
 
-Let the script run and detect the nearby devices, then press Ctrl-C to start your attack. The workflow is similar to Wifite. By default, it will only monitor for devices. If you would like to inject, specify a Duckyscript payload file using --attack. The payload should be in plain text, not compiled using the Duckyscript encoder.
+Let the script run and detect the nearby devices, then press Ctrl-C to start your attack. The workflow is similar to Wifite. By default, it will only monitor for devices. If you would like to inject, specify a Duckyscript payload file using --script. The payload should be in plain text, not compiled using the Duckyscript encoder.
 
 If you have no idea what Duckyscript is, see the [Hak5 USB Rubber Ducky Wiki](https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Duckyscript).
 

