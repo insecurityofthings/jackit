@@ -2,7 +2,9 @@
 
 ## What
 
-This is an implementation of Bastille's MouseJack exploit. See [mousejack.com](https://www.mousejack.com) for more details. Full credit goes to Bastille for discovering this issue and writing the libraries to work with the CrazyRadio PA dongle.
+This is a partial implementation of Bastille's MouseJack exploit. See [mousejack.com](https://www.mousejack.com) for more details. Full credit goes to [Bastille's team](https://www.bastille.net/meet-mousejack-researchers) for discovering this issue and writing the libraries to work with the CrazyRadio PA dongle. Also, thanks to Samy Kamkar for [KeySweeper](http://samy.pl/keysweeper/), to Thorsten Schroeder and Max Moser for their work on [KeyKeriki](http://www.remote-exploit.org/articles/keykeriki_v2_0__8211_2_4ghz/) and to [Travis Goodspeed](http://travisgoodspeed.blogspot.ca/2011/02/promiscuity-is-nrf24l01s-duty.html). We stand on the shoulders of giants.
+
+To our knowledge, it should work on all Microsoft and Logitech devices based on the NRF24L01-series RFICs.
 
 ## How
 
@@ -26,4 +28,6 @@ If you have no idea what Duckyscript is, see the [Hak5 USB Rubber Ducky Wiki](ht
 
 ## Who
 
-This implementation was written by phishun and infamy. Our attack script and keylogger fall under the BSD license. All the files in the lib directory were written by Bastille and are GPLv3 license.
+This implementation was written by phishun and infamy. Our code is all BSD license. All the files in the lib directory were written by Bastille's research team and are GPLv3 license.
+
+Full disclosure: I normally write code in Ruby, and my Python is pretty bad. Sorry.
