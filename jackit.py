@@ -173,6 +173,14 @@ class DuckyParser(object):
 
     def parse(self):
         entries = []
+        
+        # process lines for repeat
+        for pos, line in enumerate(self.script):
+            if line.startswith("REPEAT"):
+                self.script.remove(line)
+                for i in range(1, int(line.split()[1])):
+                    self.script.insert(pos,self.script[pos - 1])
+
         for line in self.script:
             if line.startswith('ALT'):
                 entry = self.blank_entry.copy()
@@ -224,9 +232,11 @@ class DuckyParser(object):
                 entry = self.blank_entry.copy()
                 entry['char'] = "\n"
                 entry['hid'], entry['shift'] = self.char_to_hid('ENTER')
-                entries.append(entry)
+                entries.append(entry)   
+
             elif len(line) == 0:
                 pass
+            
             else:
                 print "CAN'T PROCESS... %s" % line
 
