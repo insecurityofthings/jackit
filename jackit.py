@@ -150,9 +150,13 @@ class DuckyParser(object):
         'END':          [77, False],
         'PAGEDOWN':     [78, False],
         'RIGHT':        [79, False],
+        'RIGHTARROW':   [79, False],
         'LEFT':         [80, False],
+        'LEFTARROW':    [80, False],
         'DOWN':         [81, False],
+        'DOWNARROW':    [81, False],
         'UP':           [82, False],
+        'UPARROW':      [82, False],
     }
 
     blank_entry = {
