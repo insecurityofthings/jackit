@@ -238,6 +238,31 @@ class DuckyParser(object):
                 entry['hid'], entry['shift'] = self.char_to_hid('ENTER')
                 entries.append(entry)   
 
+            # arrow keys
+            elif line.startswith("UP") or line.startswith("UPARROW"):
+                entry = self.blank_entry.copy()
+                entry['char'] = "UP"
+                entry['hid'], entry['shift'] = self.char_to_hid('UP')
+                entries.append(entry)
+
+            elif line.startswith("DOWN") or line.startswith("DOWNARROW"):
+                entry = self.blank_entry.copy()
+                entry['char'] = "DOWN"
+                entry['hid'], entry['shift'] = self.char_to_hid('DOWN')
+                entries.append(entry)
+
+            elif line.startswith("LEFT") or line.startswith("LEFTARROW"):
+                entry = self.blank_entry.copy()
+                entry['char'] = "LEFT"
+                entry['hid'], entry['shift'] = self.char_to_hid('LEFT')
+                entries.append(entry)
+
+            elif line.startswith("RIGHT") or line.startswith("RIGHTARROW"):
+                entry = self.blank_entry.copy()
+                entry['char'] = "RIGHT"
+                entry['hid'], entry['shift'] = self.char_to_hid('RIGHT')
+                entries.append(entry)
+
             elif len(line) == 0:
                 pass
             

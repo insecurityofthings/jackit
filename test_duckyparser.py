@@ -6,6 +6,8 @@ def test_char_to_hid():
     dp = jackit.DuckyParser("test")
     assert dp.char_to_hid('a') == [4, False]
     assert dp.char_to_hid('A') == [4, True]
+    assert dp.char_to_hid('UP') == [82, False]
+
 
 def test_parse_repeat():
     dp = jackit.DuckyParser("""
@@ -44,6 +46,17 @@ def test_parse():
 
     dp = jackit.DuckyParser("GUI r\n")
     assert dp.parse() == [{'alt': False, 'char': 'r', 'ctrl': False, 'hid': 21, 'meta': True, 'shift': False, 'sleep': 0}]
+
+def test_parse_arrowkeys():
+    dp = jackit.DuckyParser('UP')
+    assert dp.parse() == [{'char': 'UP', 'meta': False, 'hid': 82, 'ctrl': False, 'shift': False, 'alt': False, 'sleep': 0}]
+    dp = jackit.DuckyParser('DOWN')
+    assert dp.parse() == [{'char': 'DOWN', 'meta': False, 'hid': 81, 'ctrl': False, 'shift': False, 'alt': False, 'sleep': 0}]
+    dp = jackit.DuckyParser('LEFT')
+    assert dp.parse() == [{'char': 'LEFT', 'meta': False, 'hid': 80, 'ctrl': False, 'shift': False, 'alt': False, 'sleep': 0}]
+    dp = jackit.DuckyParser('RIGHT')
+    assert dp.parse() == [{'char': 'RIGHT', 'meta': False, 'hid': 79, 'ctrl': False, 'shift': False, 'alt': False, 'sleep': 0}]
+
 
 def test_parse_advance():
     dp = jackit.DuckyParser("""
