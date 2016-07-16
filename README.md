@@ -38,6 +38,8 @@ Let the script run and detect the nearby devices, then press Ctrl-C to start you
 
 If you have no idea what Duckyscript is, see the [Hak5 USB Rubber Ducky Wiki](https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Duckyscript).
 
+For practical usage instructions and gotchas, check on [the Wiki page](https://github.com/phikshun/jackit/wiki).
+
 ## Who
 
 This implementation was written by phikshun and infamy. Our code is all BSD license. All the files in the lib directory were written by Bastille's research team and are GPLv3 license.
