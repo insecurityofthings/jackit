@@ -7,6 +7,7 @@ import time
 import click
 import tabulate
 from lib import nrf24
+import keymap
 
 
 __version__ = 0.01
@@ -27,149 +28,52 @@ class DuckyParser(object):
     ''' Help map ducky like script to HID codes to be sent '''
     
     hid_map = {
-        'a':            [4, False],
-        'A':            [4, True],
-        'b':            [5, False],
-        'B':            [5, True],
-        'c':            [6, False],
-        'C':            [6, True],
-        'd':            [7, False],
-        'D':            [7, True],
-        'e':            [8, False],
-        'E':            [8, True],
-        'f':            [9, False],
-        'F':            [9, True],
-        'g':            [10, False],
-        'G':            [10, True],
-        'h':            [11, False],
-        'H':            [11, True],
-        'i':            [12, False],
-        'I':            [12, True],
-        'j':            [13, False],
-        'J':            [13, True],
-        'k':            [14, False],
-        'K':            [14, True],
-        'l':            [15, False],
-        'L':            [15, True],
-        'm':            [16, False],
-        'M':            [16, True],
-        'n':            [17, False],
-        'N':            [17, True],
-        'o':            [18, False],
-        'O':            [18, True],
-        'p':            [19, False],
-        'P':            [19, True],
-        'q':            [20, False],
-        'Q':            [20, True],
-        'r':            [21, False],
-        'R':            [21, True],
-        's':            [22, False],
-        'S':            [22, True],
-        't':            [23, False],
-        'T':            [23, True],
-        'u':            [24, False],
-        'U':            [24, True],
-        'v':            [25, False],
-        'V':            [25, True],
-        'w':            [26, False],
-        'W':            [26, True],
-        'x':            [27, False],
-        'X':            [27, True],
-        'y':            [28, False],
-        'Y':            [28, True],
-        'z':            [29, False],
-        'Z':            [29, True],
-        '1':            [30, False],
-        '!':            [30, True],
-        '2':            [31, False],
-        '@':            [31, True],
-        '3':            [32, False],
-        '#':            [32, True],
-        '4':            [33, False],
-        '$':            [33, True],
-        '5':            [34, False],
-        '%':            [34, True],
-        '6':            [35, False],
-        '^':            [35, True],
-        '7':            [36, False],
-        '&':            [36, True],
-        '8':            [37, False],
-        '*':            [37, True],
-        '9':            [38, False],
-        '(':            [38, True],
-        '0':            [39, False],
-        ')':            [39, True],
-        'ENTER':        [40, False],
-        'ESCAPE':       [41, False],
-        'DELETE':       [42, False],
-        'TAB':          [43, False],
-        'SPACE':        [44, False],
-        ' ':            [44, False],
-        '-':            [45, False],
-        '_':            [45, True],
-        '=':            [46, False],
-        '+':            [46, True],
-        '[':            [47, False],
-        '{':            [47, True],
-        ']':            [48, False],
-        '}':            [48, True],
-        '\\':           [49, False],
-        '|':            [49, True],
-        ';':            [51, False],
-        ':':            [51, True],
-        '\'':           [52, False],
-        '"':            [52, True],
-        '`':            [53, False],
-        '~':            [53, True],
-        ',':            [54, False],
-        '<':            [54, True],
-        '.':            [55, False],
-        '>':            [55, True],
-        '/':            [56, False],
-        '?':            [56, True],
-        'CAPSLOCK':     [57, False],
-        'F1':           [58, False],
-        'F2':           [59, False],
-        'F3':           [60, False],
-        'F4':           [61, False],
-        'F5':           [62, False],
-        'F6':           [63, False],
-        'F7':           [64, False],
-        'F8':           [65, False],
-        'F9':           [66, False],
-        'F10':          [67, False],
-        'F11':          [68, False],
-        'F12':          [69, False],
-        'PRINTSCREEN':  [70, False],
-        'SCROLLLOCK':   [71, False],
-        'PAUSE':        [72, False],
-        'INSERT':       [73, False],
-        'HOME':         [74, False],
-        'PAGEUP':       [75, False],
-        'DEL':          [76, False],
-        'END':          [77, False],
-        'PAGEDOWN':     [78, False],
-        'RIGHT':        [79, False],
-        'RIGHTARROW':   [79, False],
-        'LEFT':         [80, False],
-        'LEFTARROW':    [80, False],
-        'DOWN':         [81, False],
-        'DOWNARROW':    [81, False],
-        'UP':           [82, False],
-        'UPARROW':      [82, False],
+        'SCROLLLOCK': [71, 0],
+        'ENTER':      [40, 0],
+        'F12':        [69, 0],
+        'HOME':       [74, 0],
+        'F10':        [67, 0],
+        'F9':         [66, 0],
+        'ESCAPE':     [41, 0],
+        'PAGEUP':     [75, 0],
+        'TAB':        [43, 0],
+        'PRINTSCREEN': [70, 0],
+        'F2':         [59, 0],
+        'CAPSLOCK':   [57, 0],
+        'F1':         [58, 0],
+        'F4':         [61, 0],
+        'F6':         [63, 0],
+        'F8':         [65, 0],
+        'DOWNARROW':  [81, 0],
+        'DELETE':     [42, 0],
+        'RIGHT':      [79, 0],
+        'F3':         [60, 0],
+        'DOWN':       [81, 0],
+        'DEL':        [76, 0],
+        'END':        [77, 0],
+        'INSERT':     [73, 0],
+        'F5':         [62, 0],
+        'LEFTARROW':  [80, 0],
+        'RIGHTARROW': [79, 0],
+        'PAGEDOWN':   [78, 0],
+        'PAUSE':      [72, 0],
+        'SPACE':      [44, 0],
+        'UPARROW':    [82, 0],
+        'F11':        [68, 0],
+        'F7':         [64, 0],
+        'UP':         [82, 0],
+        'LEFT':       [80, 0]
     }
 
     blank_entry = {
-        "meta": False,
-        "shift": False,
-        "alt": False,
-        "ctrl": False,
+        "mod": 0,
         "hid": 0,
         "char": '',
         "sleep": 0
     }
 
-    def __init__(self, attack_script):
+    def __init__(self, attack_script, key_mapping):
+        self.hid_map.update(key_mapping)
         self.script = attack_script.split("\n")
 
     def char_to_hid(self, char):
@@ -188,36 +92,36 @@ class DuckyParser(object):
         for line in self.script:
             if line.startswith('ALT'):
                 entry = self.blank_entry.copy()
-                entry['alt'] = True
                 entry['char'] = line.split()[1]
-                entry['hid'], entry['shift'] = self.char_to_hid(entry['char'])
+                entry['hid'], mod = self.char_to_hid(entry['char'])
+                entry['mod'] = 4 | mod
                 entries.append(entry)
 
             elif line.startswith("GUI") or line.startswith('WINDOWS') or line.startswith('COMMAND'):
                 entry = self.blank_entry.copy()
-                entry['meta'] = True
                 entry['char'] = line.split()[1]
-                entry['hid'], entry['shift'] = self.char_to_hid(entry['char'])
+                entry['hid'], mod = self.char_to_hid(entry['char'])
+                entry['mod'] = 8 | mod
                 entries.append(entry)
 
             elif line.startswith('CTRL') or line.startswith('CONTROL'):
                 entry = self.blank_entry.copy()
-                entry['ctrl'] = True
                 entry['char'] = line.split()[1]
-                entry['hid'], entry['shift'] = self.char_to_hid(entry['char'])
+                entry['hid'], mod = self.char_to_hid(entry['char'])
+                entry['mod'] = 1 | mod
                 entries.append(entry)
 
             elif line.startswith('SHIFT'):
                 entry = self.blank_entry.copy()
-                entry['shift'] = True
                 entry['char'] = line.split()[1]
-                entry['hid'], entry['shift'] = self.char_to_hid(entry['char'])
+                entry['hid'], mod = self.char_to_hid(entry['char'])
+                entry['mod'] = 2 | mod
                 entries.append(entry)
 
             elif line.startswith("ESC") or line.startswith('APP') or line.startswith('ESCAPE'):
                 entry = self.blank_entry.copy()
                 entry['char'] = "ESC"
-                entry['hid'], entry['shift'] = self.char_to_hid('ESC')
+                entry['hid'], entry['mod'] = self.char_to_hid('ESCAPE')
                 entries.append(entry)
 
             elif line.startswith("DELAY"):
@@ -229,38 +133,38 @@ class DuckyParser(object):
                 for char in " ".join(line.split()[1:]):
                     entry = self.blank_entry.copy()
                     entry['char'] = char
-                    entry['hid'], entry['shift'] = self.char_to_hid(char)
+                    entry['hid'], entry['mod'] = self.char_to_hid(char)
                     entries.append(entry)
 
             elif line.startswith("ENTER"):
                 entry = self.blank_entry.copy()
                 entry['char'] = "\n"
-                entry['hid'], entry['shift'] = self.char_to_hid('ENTER')
+                entry['hid'], entry['mod'] = self.char_to_hid('ENTER')
                 entries.append(entry)   
 
             # arrow keys
             elif line.startswith("UP") or line.startswith("UPARROW"):
                 entry = self.blank_entry.copy()
                 entry['char'] = "UP"
-                entry['hid'], entry['shift'] = self.char_to_hid('UP')
+                entry['hid'], entry['mod'] = self.char_to_hid('UP')
                 entries.append(entry)
 
             elif line.startswith("DOWN") or line.startswith("DOWNARROW"):
                 entry = self.blank_entry.copy()
                 entry['char'] = "DOWN"
-                entry['hid'], entry['shift'] = self.char_to_hid('DOWN')
+                entry['hid'], entry['mod'] = self.char_to_hid('DOWN')
                 entries.append(entry)
 
             elif line.startswith("LEFT") or line.startswith("LEFTARROW"):
                 entry = self.blank_entry.copy()
                 entry['char'] = "LEFT"
-                entry['hid'], entry['shift'] = self.char_to_hid('LEFT')
+                entry['hid'], entry['mod'] = self.char_to_hid('LEFT')
                 entries.append(entry)
 
             elif line.startswith("RIGHT") or line.startswith("RIGHTARROW"):
                 entry = self.blank_entry.copy()
                 entry['char'] = "RIGHT"
-                entry['hid'], entry['shift'] = self.char_to_hid('RIGHT')
+                entry['hid'], entry['mod'] = self.char_to_hid('RIGHT')
                 entries.append(entry)
 
             elif len(line) == 0:
@@ -434,16 +338,8 @@ class MicrosoftHID(object):
         return payload
 
     def key(self, payload, key):
-        payload[7] = 0
+        payload[7] = key['mod']
         payload[9] = key['hid']
-        if key['meta']:
-            payload[7] |= 0x08
-        if key['alt']:
-            payload[7] |= 0x04
-        if key['shift']:
-            payload[7] |= 0x02
-        if key['ctrl']:
-            payload[7] |= 0x01
         return payload
 
     def build_frames(self, key):
@@ -512,16 +408,8 @@ class LogitechHID(object):
         return payload
 
     def key(self, payload, key):
-        payload[2] = 0
+        payload[2] = key['mod']
         payload[3] = key['hid']
-        if key['meta']:
-            payload[2] |= 0x08
-        if key['alt']:
-            payload[2] |= 0x04
-        if key['shift']:
-            payload[2] |= 0x02
-        if key['ctrl']:
-            payload[2] |= 0x01
         return payload
 
     def build_frames(self, key):
@@ -559,7 +447,8 @@ def confirmroot():
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-def cli(debug, script, lowpower, interval):
+@click.option('--layout', default='us', help="Keyboard layout (be, br, ca, ch, de, dk, es, fi, fr, gb, hr, it, no, pt, ru, si, sv, tr, or us)")
+def cli(debug, script, lowpower, interval, layout):
 
     banner()
     confirmroot()
@@ -567,13 +456,17 @@ def cli(debug, script, lowpower, interval):
     if debug:
         print O + "[W] " + W + "Debug is enabled"
 
+    if not layout in ['be', 'br', 'ca', 'ch', 'de', 'dk', 'es', 'fi', 'fr', 'gb', 'hr', 'it', 'no', 'pt', 'ru', 'si', 'sv', 'tr', 'us']:
+        print R + '[!] ' + W + "Invalid keyboard layout selected."
+        exit(-1)
+
     if script == "":
         print R + '[!] ' + W + "You must supply a ducky script using --script <filename>"
         print R + '[!] ' + W + "Attacks are disabled."
         attack = ""
     else:
         f = open(script, 'r')
-        parser = DuckyParser(f.read())
+        parser = DuckyParser(f.read(), keymap.mapping[layout])
         attack = parser.parse()
 
     # Initialize the radio
