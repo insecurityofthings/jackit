@@ -468,7 +468,7 @@ def confirmroot():
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-@click.option('--layout', default='us', help="Keyboard layout (be, br, ca, ch, de, dk, es, fi, fr, gb, hr, it, no, pt, ru, si, sv, tr, or us)")
+@click.option('--layout', default='us', help="Keyboard layout: %s" % ", ".join(keymap.mapping.keys()))
 def cli(debug, script, lowpower, interval, layout):
 
     banner()
@@ -477,7 +477,7 @@ def cli(debug, script, lowpower, interval, layout):
     if debug:
         print O + "[W] " + W + "Debug is enabled"
 
-    if not layout in ['be', 'br', 'ca', 'ch', 'de', 'dk', 'es', 'fi', 'fr', 'gb', 'hr', 'it', 'no', 'pt', 'ru', 'si', 'sv', 'tr', 'us']:
+    if not layout in keymap.mapping.keys():
         print R + '[!] ' + W + "Invalid keyboard layout selected."
         exit(-1)
 
