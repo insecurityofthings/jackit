@@ -10,7 +10,9 @@ We tested with the following hardware:
 - Microsoft Wireless Mouse 1000
 - [Microsoft All-In-One Media Keyboard](https://www.microsoft.com/accessories/en-ca/products/keyboards/all-in-one-media-keyboard/n9z-00002)
 - [Microsoft Sculpt Ergonomic Mouse](https://www.microsoft.com/accessories/en-ca/products/mice/sculpt-ergonomic-mouse/l6v-00002)
+- [Logitech Wireless Touch Keyboard K400r](http://www.logitech.com/en-ca/product/wireless-touch-keyboard-k400r)
 - [Logitech Marathon M705 Mouse](http://www.logitech.com/en-us/product/marathon-mouse-m705)
+- [Logitech Wave M510 Mouse](http://www.logitech.com/en-ca/product/wireless-mouse-m510)
 
 Tested on Windows 8.1, Windows 10 and macOS 10.11. Let us know if it works or doesn't work on your device. If you can see the frames with the CrazyRadio PA dongle, chances are we can build support for it.
 
