@@ -13,8 +13,11 @@ We tested with the following hardware:
 - [Logitech Wireless Touch Keyboard K400r](http://www.logitech.com/en-ca/product/wireless-touch-keyboard-k400r)
 - [Logitech Marathon M705 Mouse](http://www.logitech.com/en-us/product/marathon-mouse-m705)
 - [Logitech Wave M510 Mouse](http://www.logitech.com/en-ca/product/wireless-mouse-m510)
+- [Logitech Wireless Gaming Mouse G700s](http://gaming.logitech.com/en-ca/product/g700s-rechargeable-wireless-gaming-mouse)
 
-Tested on Windows 8.1, Windows 10 and macOS 10.11. Let us know if it works or doesn't work on your device. If you can see the frames with the CrazyRadio PA dongle, chances are we can build support for it.
+Tested on Windows 8.1, Windows 10 and macOS 10.11. Let us know if it works or doesn't work on your device.
+
+Note: MouseJack may not work if you have applied the [Logitech firmware update](http://forums.logitech.com/t5/Mice-and-Pointing-Devices/Logitech-Response-to-Unifying-Receiver-Research-Findings/td-p/1493878) or [KB3152550](https://support.microsoft.com/en-us/kb/3152550).
 
 ## Why
 
