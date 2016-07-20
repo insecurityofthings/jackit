@@ -17,7 +17,7 @@ We tested with the following hardware:
 
 Tested on Windows 8.1, Windows 10 and macOS 10.11. Let us know if it works or doesn't work on your device.
 
-Note: MouseJack may not work if you have applied the [Logitech firmware update](http://forums.logitech.com/t5/Mice-and-Pointing-Devices/Logitech-Response-to-Unifying-Receiver-Research-Findings/td-p/1493878) or [KB3152550](https://support.microsoft.com/en-us/kb/3152550).
+Note: JackIt may not work if you have applied the [Logitech firmware update](http://forums.logitech.com/t5/Mice-and-Pointing-Devices/Logitech-Response-to-Unifying-Receiver-Research-Findings/td-p/1493878) or [KB3152550](https://support.microsoft.com/en-us/kb/3152550).
 
 ## Why
 
