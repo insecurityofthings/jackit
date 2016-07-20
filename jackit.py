@@ -548,6 +548,8 @@ def cli(debug, script, lowpower, interval, layout, address, vendor):
             print R + "[!] " + W + "Cannot find Crazy PA USB dongle."
             print R + "[!] " + W + "Please make sure you have it preloaded with the mousejack firmware."
             exit(-1)
+        else:
+        	raise e
 
     try:
         if targeted:
