@@ -81,7 +81,7 @@ class DuckyParser(object):
 
     def parse(self):
         entries = []
-        
+
         # process lines for repeat
         for pos, line in enumerate(self.script):
             if line.startswith("REPEAT"):
@@ -169,7 +169,7 @@ class DuckyParser(object):
 
             elif len(line) == 0:
                 pass
-            
+
             else:
                 print "CAN'T PROCESS... %s" % line
 
@@ -469,7 +469,7 @@ class LogitechHID(object):
                 next_key = None
 
             if key['hid']:
-                key['frames'].append([self.frame(key), 10])
+                key['frames'].append([self.frame(key), 12])
                 if not next_key or key['hid'] == next_key['hid'] or next_key['sleep']:
                     key['frames'].append([self.frame(), 0])
 
