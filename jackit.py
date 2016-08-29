@@ -10,7 +10,7 @@ from lib import nrf24
 import keymap
 
 
-__version__ = 0.01
+__version__ = 0.02
 __authors__ = "phikshun, infamy"
 
 # some console colours
@@ -348,7 +348,11 @@ class JackIt(object):
         for key in attack:
             if key['frames']:
                 for frame in key['frames']:
-                    self.transmit_payload(frame[0])
+                    if not self.transmit_payload(frame[0]):
+                        for i in range(0,5):
+                            time.sleep(0.1)
+                            if self.transmit_payload(frame[0]):
+                                break
                     time.sleep(frame[1] / 1000.0)
             elif key['sleep']:
                 time.sleep(int(key['sleep']) / 1000.0)
@@ -549,7 +553,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor):
             print R + "[!] " + W + "Please make sure you have it preloaded with the mousejack firmware."
             exit(-1)
         else:
-        	raise e
+            raise e
 
     try:
         if targeted:
