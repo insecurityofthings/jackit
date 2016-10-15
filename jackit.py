@@ -28,6 +28,7 @@ class DuckyParser(object):
     ''' Help map ducky like script to HID codes to be sent '''
     
     hid_map = {
+        '':           [0, 0],
         'SCROLLLOCK': [71, 0],
         'ENTER':      [40, 0],
         'F12':        [69, 0],
@@ -92,28 +93,40 @@ class DuckyParser(object):
         for line in self.script:
             if line.startswith('ALT'):
                 entry = self.blank_entry.copy()
-                entry['char'] = line.split()[1]
+                if line.find(' ') == -1:
+                    entry['char'] = ''
+                else:
+                    entry['char'] = line.split()[1]
                 entry['hid'], mod = self.char_to_hid(entry['char'])
                 entry['mod'] = 4 | mod
                 entries.append(entry)
 
             elif line.startswith("GUI") or line.startswith('WINDOWS') or line.startswith('COMMAND'):
                 entry = self.blank_entry.copy()
-                entry['char'] = line.split()[1]
+                if line.find(' ') == -1:
+                    entry['char'] = ''
+                else:
+                    entry['char'] = line.split()[1]
                 entry['hid'], mod = self.char_to_hid(entry['char'])
                 entry['mod'] = 8 | mod
                 entries.append(entry)
 
             elif line.startswith('CTRL') or line.startswith('CONTROL'):
                 entry = self.blank_entry.copy()
-                entry['char'] = line.split()[1]
+                if line.find(' ') == -1:
+                    entry['char'] = ''
+                else:
+                    entry['char'] = line.split()[1]
                 entry['hid'], mod = self.char_to_hid(entry['char'])
                 entry['mod'] = 1 | mod
                 entries.append(entry)
 
             elif line.startswith('SHIFT'):
                 entry = self.blank_entry.copy()
-                entry['char'] = line.split()[1]
+                if line.find(' ') == -1:
+                    entry['char'] = ''
+                else:
+                    entry['char'] = line.split()[1]
                 entry['hid'], mod = self.char_to_hid(entry['char'])
                 entry['mod'] = 2 | mod
                 entries.append(entry)
@@ -404,9 +417,10 @@ class MicrosoftHID(object):
             while self.sequence_num < 10:
                 key['frames'].append([self.frame(), 0])
 
-            if key['hid']:
+            if key['hid'] or key['mod']:
                 key['frames'].append([self.frame(key), 5])
-                if not next_key or key['hid'] == next_key['hid'] or next_key['sleep']:
+                if not next_key or (key['hid'] == next_key['hid'] and \
+                        key['mod'] == next_key['mod']) or next_key['sleep']:
                     key['frames'].append([self.frame(), 0])
 
 
@@ -472,9 +486,10 @@ class LogitechHID(object):
             else:
                 next_key = None
 
-            if key['hid']:
+            if key['hid'] or key['mod']:
                 key['frames'].append([self.frame(key), 12])
-                if not next_key or key['hid'] == next_key['hid'] or next_key['sleep']:
+                if not next_key or (key['hid'] == next_key['hid'] and \
+                        key['mod'] == next_key['mod']) or next_key['sleep']:
                     key['frames'].append([self.frame(), 0])
 
 
