@@ -29,6 +29,10 @@ class DuckyParser(object):
     
     hid_map = {
         '':           [0, 0],
+        'ALT':        [0, 4],
+        'SHIFT':      [0, 2],
+        'CTRL':       [0, 1],
+        'GUI':        [0, 8],
         'SCROLLLOCK': [71, 0],
         'ENTER':      [40, 0],
         'F12':        [69, 0],
