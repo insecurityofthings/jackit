@@ -375,8 +375,6 @@ class JackIt(object):
                     #        if self.transmit_payload(frame[0]):
                     #            break
                     time.sleep(frame[1] / 1000.0)
-            elif key['sleep']:
-                time.sleep(int(key['sleep']) / 1000.0)
 
 
 class MicrosoftHID(object):
@@ -429,6 +427,11 @@ class MicrosoftHID(object):
                 key['frames'].append([self.frame(key), 5])
                 if not next_key or (key['hid'] == next_key['hid'] and \
                         key['mod'] == next_key['mod']) or next_key['sleep']:
+                    key['frames'].append([self.frame(), 0])
+            elif key['sleep']:
+                count = int(key['sleep']) / 10
+                for i in range(0, count):
+                    print '10ms add delay'
                     key['frames'].append([self.frame(), 0])
 
 
@@ -507,6 +510,10 @@ class LogitechHID(object):
                 if not next_key or (key['hid'] == next_key['hid'] and \
                         key['mod'] == next_key['mod']) or next_key['sleep']:
                     key['frames'].append([self.frame(), 0])
+            elif key['sleep']:
+                count = int(key['sleep']) / 10
+                for i in range(0, count):
+                    key['frames'].append([self.keepalive[:], 10])
 
 
 def banner():
