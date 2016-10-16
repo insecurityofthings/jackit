@@ -368,7 +368,7 @@ class JackIt(object):
                     self.transmit_payload(frame[0])
                     # This code was for additional reliability -- may cause duplicate keystrokes
                     # (currently leaving it disabled)
-                    
+
                     #if not self.transmit_payload(frame[0]):
                     #    for i in range(0,5):
                     #        time.sleep(0.1)
@@ -492,7 +492,7 @@ class LogitechHID(object):
             key = attack[i]
 
             if i == 0:
-                key['frames'] = [[self.hello[:], 5]]
+                key['frames'] = [[self.hello[:], 12]]
             else:
                 key['frames'] = []
 
