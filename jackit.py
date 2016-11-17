@@ -115,6 +115,26 @@ class DuckyParser(object):
                 entry['mod'] = 8 | mod
                 entries.append(entry)
 
+            elif line.startswith('CTRL-ALT') or line.startswith('CONTROL-ALT'):
+                entry = self.blank_entry.copy()
+                if line.find(' ') == -1:
+                    entry['char'] = ''
+                else:
+                    entry['char'] = line.split()[1]
+                entry['hid'], mod = self.char_to_hid(entry['char'])
+                entry['mod'] = 4 | 1 | mod
+                entries.append(entry)
+
+            elif line.startswith('CTRL-SHIFT') or line.startswith('CONTROL-SHIFT'):
+                entry = self.blank_entry.copy()
+                if line.find(' ') == -1:
+                    entry['char'] = ''
+                else:
+                    entry['char'] = line.split()[1]
+                entry['hid'], mod = self.char_to_hid(entry['char'])
+                entry['mod'] = 4 | 2 | mod
+                entries.append(entry)
+
             elif line.startswith('CTRL') or line.startswith('CONTROL'):
                 entry = self.blank_entry.copy()
                 if line.find(' ') == -1:
