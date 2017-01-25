@@ -6,7 +6,7 @@ import os
 import time
 import click
 import tabulate
-from lib import nrf24
+from lib import nrf24, nrf24_reset
 import keymap
 
 
@@ -216,12 +216,12 @@ class DuckyParser(object):
 class JackIt(object):
     ''' Class for scanning, pinging and fingerprint devices '''
 
-    def __init__(self, disable_lna=False, debug=False):
+    def __init__(self, disable_lna=False, debug=False, reset=False):
         self.channels = range(2, 84)
         self.channel_index = 0
         self.debug = debug
         self.devices = {}
-        self.init_radio(disable_lna)
+        self.init_radio(disable_lna, reset)
 
     def _debug(self, text):
         if self.debug:
@@ -242,7 +242,10 @@ class JackIt(object):
     def serialize_address(self, a):
         return ''.join(chr(b) for b in a[::-1])
 
-    def init_radio(self, disable_lna):
+    def init_radio(self, disable_lna, reset):
+        if reset:
+            self._debug("Reseting PARadio USB Dongle")
+            nrf24_reset.reset_radio(0)
         self.radio = nrf24.nrf24(0)
         if not disable_lna:
             self._debug("Enabled LNA")
@@ -565,7 +568,8 @@ def confirmroot():
 @click.option('--layout', default='us', help="Keyboard layout: %s" % ", ".join(keymap.mapping.keys()))
 @click.option('--address', default="", help="Address of device to target attack")
 @click.option('--vendor', default="", help="Vendor of device to target (required when specifying address)")
-def cli(debug, script, lowpower, interval, layout, address, vendor):
+@click.option('--reset', is_flag=True, help="Reset CrazyPA dongle prior to initalization")
+def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
 
     banner()
     confirmroot()
@@ -591,7 +595,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor):
             exit(-1)
         else:
             targeted = True
-
+        
     if script == "":
         print R + '[!] ' + W + "You must supply a ducky script using --script <filename>"
         print R + '[!] ' + W + "Attacks are disabled."
@@ -603,7 +607,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor):
 
     # Initialize the radio
     try:
-        jack = JackIt(lowpower, debug)
+        jack = JackIt(lowpower, debug, reset)
     except Exception as e:
         if e.__str__() == "Cannot find USB dongle.":
             print R + "[!] " + W + "Cannot find Crazy PA USB dongle."
