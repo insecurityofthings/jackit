@@ -455,7 +455,6 @@ class MicrosoftHID(object):
             elif key['sleep']:
                 count = int(key['sleep']) / 10
                 for i in range(0, count):
-                    print '10ms add delay'
                     key['frames'].append([self.frame(), 0])
 
 
