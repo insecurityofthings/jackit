@@ -10,9 +10,7 @@ import tabulate
 from lib import nrf24, nrf24_reset
 import keymap
 import duckyparser
-import logitech
-import microsoft
-import microsoft_enc
+from plugins import logitech, microsoft, microsoft_enc
 
 
 __version__ = 0.02
