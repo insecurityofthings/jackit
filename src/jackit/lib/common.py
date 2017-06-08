@@ -18,7 +18,7 @@
 
 import logging
 import argparse
-from nrf24 import *
+from nrf24 import *  # NOQA
 
 channels = []
 args = None
@@ -30,8 +30,7 @@ radio = None
 def init_args(description):
 
     global parser
-    parser = argparse.ArgumentParser(description,
-        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50, width=120))
+    parser = argparse.ArgumentParser(description, formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50, width=120))
     parser.add_argument('-c', '--channels', type=int, nargs='+', help='RF channels', default=range(2, 84), metavar='N')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output', default=False)
     parser.add_argument('-l', '--lna', action='store_true', help='Enable the LNA (for CrazyRadio PA dongles)', default=False)
@@ -58,7 +57,6 @@ def parse_and_init():
     logging.debug('Using channels {0}'.format(', '.join(str(c) for c in channels)))
 
     # Initialize the radio
-    radio = nrf24(args.index)
+    radio = nrf24(args.index)  # NOQA
     if args.lna:
         radio.enable_lna()
-

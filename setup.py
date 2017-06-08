@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import io
-import re
+# import re
 from glob import glob
 from os.path import basename
 from os.path import dirname
@@ -27,10 +27,10 @@ setup(
     version='0.1.0',
     license='BSD',
     description='An example package. Generated with https://github.com/ionelmc/cookiecutter-pylibrary',
-    #long_description='%s\n%s' % (
+    # long_description='%s\n%s' % (
     #    re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.rst')),
     #    re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.rst'))
-    #),
+    # ),
     author='phikshun and infamy',
     author_email='',
     url='https://github.com/insecurityofthings/jackit',
