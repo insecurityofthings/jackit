@@ -346,8 +346,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             print(R + "[!] " + W + "No attack script was provided...")
             exit(-1)
 
-        print(GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + \
-            " separated by commas, or '%s': " % (G + 'all' + W), end="")
+        print(GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + " separated by commas, or '%s': " % (G + 'all' + W), end="")
         value = click.prompt('', default="all")
         value = value.strip().lower()
 
