@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 
 class DuckyParser(object):
@@ -185,6 +186,6 @@ class DuckyParser(object):
                 pass
 
             else:
-                print "CAN'T PROCESS... %s" % line
+                print("CAN'T PROCESS... %s" % line)
 
         return entries
