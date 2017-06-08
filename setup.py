@@ -66,7 +66,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'jackit = jackit.jackit:main',
+            'jackit = jackit.jackit:cli',
         ]
     },
 )
