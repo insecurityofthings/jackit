@@ -1,5 +1,6 @@
 # Workaround to fix problem where device time outs
 
+from __future__ import print_function
 import usb.core
 import usb.util
 try:
@@ -20,4 +21,4 @@ def reset_radio(index, idVendor=0x1915, idProduct=0x0102):
     try:
         ioctl(open(filename, "w"), USBDEVFS_RESET, 0)
     except IOError:
-        print "Unable to reset device %s" % filename
+        print("Unable to reset device %s" % filename)
