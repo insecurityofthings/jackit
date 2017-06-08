@@ -1,6 +1,5 @@
 import pytest
-import jackit
-import keymap
+from jackit import jackit, keymap
 
 def test_char_to_hid():
     '''basic test of char to hid '''
