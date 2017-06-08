@@ -16,6 +16,7 @@
 '''
 
 
+from __future__ import print_function
 import usb
 import logging
 import sys
@@ -23,8 +24,8 @@ import sys
 # Check pyusb dependency
 try:
     from usb import core as _usb_core  # NOQA
-except ImportError, ex:
-    print '''
+except ImportError:
+    print('''
 ------------------------------------------
 | PyUSB was not found or is out of date. |
 ------------------------------------------
@@ -32,7 +33,7 @@ except ImportError, ex:
 Please update PyUSB using pip:
 
 sudo pip install -U -I pip && sudo pip install -U -I pyusb
-'''
+''')
     sys.exit(1)
 
 # USB commands
@@ -68,7 +69,7 @@ class nrf24:
         try:
             self.dongle = list(usb.core.find(idVendor=0x1915, idProduct=0x0102, find_all=True))[index]
             self.dongle.set_configuration()
-        except usb.core.USBError, ex:
+        except usb.core.USBError as ex:
             raise ex
         except:
             raise Exception('Cannot find USB dongle.')
