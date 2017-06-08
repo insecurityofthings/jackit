@@ -26,7 +26,7 @@ GR = '\033[37m'  # gray
 
 class DuckyParser(object):
     ''' Help map ducky like script to HID codes to be sent '''
-    
+
     hid_map = {
         '':           [0, 0],
         'ALT':        [0, 4],
@@ -92,7 +92,7 @@ class DuckyParser(object):
             if line.startswith("REPEAT"):
                 self.script.remove(line)
                 for i in range(1, int(line.split()[1])):
-                    self.script.insert(pos,self.script[pos - 1])
+                    self.script.insert(pos, self.script[pos - 1])
 
         for line in self.script:
             if line.startswith('ALT'):
@@ -177,7 +177,7 @@ class DuckyParser(object):
                 entry = self.blank_entry.copy()
                 entry['char'] = "\n"
                 entry['hid'], entry['mod'] = self.char_to_hid('ENTER')
-                entries.append(entry)   
+                entries.append(entry)
 
             # arrow keys
             elif line.startswith("UP") or line.startswith("UPARROW"):
@@ -256,7 +256,7 @@ class JackIt(object):
         if address in self.devices:
             self.devices[address]['count'] += 1
             self.devices[address]['timestamp'] = time.time()
-            if not channel in self.devices[address]['channels']:
+            if channel not in self.devices[address]['channels']:
                 self.devices[address]['channels'].append(channel)
             if self.fingerprint_device(payload):
                 self.devices[address]['device']  = self.fingerprint_device(payload)
@@ -361,7 +361,8 @@ class JackIt(object):
         return self.radio.transmit_payload(self.serialize_payload(payload))
 
     def fingerprint_device(self, p):
-        if not p: return ''
+        if not p:
+            return ''
         if len(p) == 19 and (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
             # Most likely a non-XOR encrypted Microsoft mouse
             return 'Microsoft HID'
@@ -391,8 +392,8 @@ class JackIt(object):
                     self.transmit_payload(frame[0])
                     # This code was for additional reliability -- may cause duplicate keystrokes
                     # (currently leaving it disabled)
-
-                    #if not self.transmit_payload(frame[0]):
+                    #
+                    # if not self.transmit_payload(frame[0]):
                     #    for i in range(0,5):
                     #        time.sleep(0.1)
                     #        if self.transmit_payload(frame[0]):
@@ -438,8 +439,8 @@ class MicrosoftHID(object):
         for i in range(0, len(attack)):
             key = attack[i]
             key['frames'] = []
-            if i < len(attack)-1:
-                next_key = attack[i+1]
+            if i < len(attack) - 1:
+                next_key = attack[i + 1]
             else:
                 next_key = None
 
@@ -522,8 +523,8 @@ class LogitechHID(object):
             else:
                 key['frames'] = []
 
-            if i < len(attack)-1:
-                next_key = attack[i+1]
+            if i < len(attack) - 1:
+                next_key = attack[i + 1]
             else:
                 next_key = None
 
@@ -577,7 +578,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
     if debug:
         print O + "[W] " + W + "Debug is enabled."
 
-    if not layout in keymap.mapping.keys():
+    if layout not in keymap.mapping.keys():
         print R + '[!] ' + W + "Invalid keyboard layout selected."
         exit(-1)
 
@@ -595,7 +596,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             exit(-1)
         else:
             targeted = True
-        
+
     if script == "":
         print R + '[!] ' + W + "You must supply a ducky script using --script <filename>"
         print R + '[!] ' + W + "Attacks are disabled."
@@ -678,7 +679,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             victims = []
             for vic in value.split(","):
                 if int(vic) <= len(pretty_devices):
-                    victims.append(pretty_devices[(int(vic)-1)])
+                    victims.append(pretty_devices[(int(vic) - 1)])
                 else:
                     print R + "[!] " + W + ("Device %d key is out of range" % int(vic))
 
@@ -729,6 +730,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
     except KeyboardInterrupt:
         print '\n ' + R + '(^C)' + O + ' interrupted\n'
         print "[-] Quitting"
+
 
 if __name__ == '__main__':
     cli()

@@ -1,5 +1,5 @@
-import pytest
 from jackit import jackit, keymap
+
 
 def test_char_to_hid():
     '''basic test of char to hid '''
@@ -47,7 +47,6 @@ def test_parse():
 
     dp = jackit.DuckyParser("GUI r\n", keymap.mapping["us"])
     assert dp.parse() == [{'char': 'r', 'hid': 21, 'sleep': 0, 'mod': 8}]
-
 
 
 def test_parse_arrowkeys():
