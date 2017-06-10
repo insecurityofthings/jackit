@@ -50,9 +50,8 @@ class MouseJack(object):
             self.devices[address]['timestamp'] = time.time()
             if channel not in self.devices[address]['channels']:
                 self.devices[address]['channels'].append(channel)
-            if self.fingerprint_device(payload):
-                self.devices[address]['device']  = self.fingerprint_device(payload)
-                self.devices[address]['payload'] = payload
+            self.devices[address]['device']  = self.get_hid(payload)
+            self.devices[address]['payload'] = payload
         else:
             self.devices[address] = {}
             self.devices[address]['device']    = ''
@@ -61,7 +60,7 @@ class MouseJack(object):
             self.devices[address]['channels']  = [self.channels[self.channel_index]]
             self.devices[address]['address']   = [int(b, 16) for b in address.split(':')]
             self.devices[address]['timestamp'] = time.time()
-            self.devices[address]['device']    = self.fingerprint_device(payload)
+            self.devices[address]['device']    = self.get_hid(payload)
 
     def scan(self, timeout=5.0):
         self.radio.enter_promiscuous_mode('')
@@ -146,39 +145,14 @@ class MouseJack(object):
         self.transmit_hook(payload)
         return self.radio.transmit_payload(self.serialize_payload(payload))
 
-    def fingerprint_device(self, p):
+    def get_hid(self, p):
         if not p:
-            return ''
-        if len(p) == 19 and (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
-            # Most likely a non-XOR encrypted Microsoft mouse
-            return 'Microsoft HID'
-        elif len(p) == 19 and p[0] == 0x0a:
-            # Most likely an XOR encrypted Microsoft mouse
-            return 'MS Encrypted HID'
-        elif len(p) == 10 and p[0] == 0 and p[1] == 0xC2:
-            # Definitely a logitech mouse movement packet
-            return 'Logitech HID'
-        elif len(p) == 22 and p[0] == 0 and p[1] == 0xD3:
-            # Definitely a logitech keystroke packet
-            return 'Logitech HID'
-        elif len(p) == 5 and p[0] == 0 and p[1] == 0x40:
-            # Most likely logitech keepalive packet
-            return 'Logitech HID'
-        elif len(p) == 10 and p[0] == 0 and p[1] == 0x4F:
-            # Most likely logitech sleep timer packet
-            return 'Logitech HID'
-        else:
-            return ''
-
-    def get_hid_from_payload(self, address, payload):
-        device_type = self.fingerprint_device(payload)
-        if device_type == 'Microsoft HID':
-            hid = microsoft.HID(address, payload)
-        elif device_type == 'MS Encrypted HID':
-            hid = microsoft_enc.HID(address, payload)
-        elif device_type == 'Logitech HID':
-            hid = logitech.HID(address, payload)
-        return hid
+            return None
+        classes = [microsoft, microsoft_enc, logitech]
+        for hid in classes:
+            if hid.HID.fingerprint(p):
+                return hid.HID
+        return None
 
     def attack(self, hid, attack):
         hid.build_frames(attack)

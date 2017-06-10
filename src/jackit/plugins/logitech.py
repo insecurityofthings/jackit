@@ -57,3 +57,23 @@ class HID(object):
                 count = int(key['sleep']) / 10
                 for i in range(0, count):
                     key['frames'].append([self.keepalive[:], 10])
+
+    @classmethod
+    def fingerprint(cls, p):
+        if len(p) == 10 and p[0] == 0 and p[1] == 0xC2:
+            # Definitely a logitech mouse movement packet
+            return cls
+        elif len(p) == 22 and p[0] == 0 and p[1] == 0xD3:
+            # Definitely a logitech keystroke packet
+            return cls
+        elif len(p) == 5 and p[0] == 0 and p[1] == 0x40:
+            # Most likely logitech keepalive packet
+            return cls
+        elif len(p) == 10 and p[0] == 0 and p[1] == 0x4F:
+            # Most likely logitech sleep timer packet
+            return cls
+        return None
+
+    @classmethod
+    def description(cls):
+        return 'Logitech HID'

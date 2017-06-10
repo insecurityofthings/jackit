@@ -23,3 +23,14 @@ class HID(microsoft.HID):
 
     def frame(self, key={'hid': 0, 'mod': 0}):
         return self.xor_crypt(self.checksum(self.key(self.sequence(self.payload_template[:]), key)))
+
+    @classmethod
+    def fingerprint(cls, p):
+        if len(p) == 19 and p[0] == 0x0a:
+            # Most likely an XOR encrypted Microsoft mouse
+            return cls
+        return None
+
+    @classmethod
+    def description(cls):
+        return 'Microsoft Encrypted HID'

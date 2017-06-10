@@ -56,3 +56,14 @@ class HID(object):
                 count = int(key['sleep']) / 10
                 for i in range(0, count):
                     key['frames'].append([self.frame(), 0])
+
+    @classmethod
+    def fingerprint(cls, p):
+        if len(p) == 19 and (p[0] == 0x08 or p[0] == 0x0c) and p[6] == 0x40:
+            # Most likely a non-XOR encrypted Microsoft mouse
+            return cls
+        return None
+
+    @classmethod
+    def description(cls):
+        return 'Microsoft HID'
