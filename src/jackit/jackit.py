@@ -27,6 +27,10 @@ C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
 
 
+def _print_err(text):
+    print(R + '[!] ' + W + text)
+
+
 class JackIt(object):
     ''' Class for scanning, pinging and fingerprint devices '''
 
@@ -147,7 +151,7 @@ class JackIt(object):
                     self.add_device(addr_string, payload)
 
         except RuntimeError:
-            print(R + '[!] ' + W + 'Runtime error while sniffing')
+            _print_err('Runtime error while sniffing')
             exit(-1)
         return self.devices
 
@@ -232,8 +236,8 @@ def banner():
 def confirmroot():
     # make sure we are root
     if os.getuid() != 0:
-        print(R + "[!] " + W + "ERROR: You need to run as root!")
-        print(R + "[!] " + W + "login as root (su root) or try sudo ./jackit.py")
+        _print_err("ERROR: You need to run as root!")
+        _print_err("login as root (su root) or try sudo ./jackit.py")
         exit(-1)
 
 
@@ -255,27 +259,27 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
         print(O + "[W] " + W + "Debug is enabled.")
 
     if layout not in keymap.mapping.keys():
-        print(R + '[!] ' + W + "Invalid keyboard layout selected.")
+        _print_err("Invalid keyboard layout selected.")
         exit(-1)
 
     targeted = False
     if address and not vendor:
-        print(R + '[!] ' + W + "Please use --vendor option to specify either Logitech or Microsoft.")
+        _print_err("Please use --vendor option to specify either Logitech or Microsoft.")
         exit(-1)
     elif vendor and not address:
-        print(R + '[!] ' + W + "Please use --address option when specifying a vendor.")
+        _print_err("Please use --address option when specifying a vendor.")
         exit(-1)
     elif vendor and address:
         vendor = vendor.lower()
         if not vendor.startswith("l") and not vendor.startswith("m"):
-            print(R + '[!] ' + W + "Unknown vendor: specify either Microsoft of Logitech.")
+            _print_err("Unknown vendor: specify either Microsoft of Logitech.")
             exit(-1)
         else:
             targeted = True
 
     if script == "":
-        print(R + '[!] ' + W + "You must supply a ducky script using --script <filename>")
-        print(R + '[!] ' + W + "Attacks are disabled.")
+        _print_err("You must supply a ducky script using --script <filename>")
+        _print_err("Attacks are disabled.")
         attack = ""
     else:
         f = open(script, 'r')
@@ -287,8 +291,8 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
         jack = JackIt(lowpower, debug, reset)
     except Exception as e:
         if e.__str__() == "Cannot find USB dongle.":
-            print(R + "[!] " + W + "Cannot find Crazy PA USB dongle.")
-            print(R + "[!] " + W + "Please make sure you have it preloaded with the mousejack firmware.")
+            _print_err("Cannot find Crazy PA USB dongle.")
+            _print_err("Please make sure you have it preloaded with the mousejack firmware.")
             exit(-1)
         else:
             raise e
@@ -337,11 +341,11 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             print("")
 
         if 'devices' not in locals() or len(devices) == 0:
-            print(R + "[!] " + W + "No devices found please try again...")
+            _print_err("No devices found please try again...")
             exit(-1)
 
         if attack == "":
-            print(R + "[!] " + W + "No attack script was provided...")
+            _print_err("No attack script was provided...")
             exit(-1)
 
         print(GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + " separated by commas, or '%s': " % (G + 'all' + W), end="")
@@ -356,7 +360,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
                 if int(vic) <= len(pretty_devices):
                     victims.append(pretty_devices[(int(vic) - 1)])
                 else:
-                    print(R + "[!] " + W + ("Device %d key is out of range" % int(vic)))
+                    _print_err(("Device %d key is out of range" % int(vic)))
 
         targets = []
         for victim in victims:
