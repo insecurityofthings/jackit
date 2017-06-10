@@ -10,6 +10,7 @@ import tabulate
 import keymap
 import duckyparser
 import mousejack
+import sys
 
 
 __version__ = 0.02
@@ -44,11 +45,11 @@ def banner():
     print("")
 
 
-def confirmroot():
+def confirm_root():
     # make sure we are root
     if os.getuid() != 0:
         _print_err("ERROR: You need to run as root!")
-        _print_err("login as root (su root) or try sudo ./jackit.py")
+        _print_err("login as root (su root) or try sudo %s" % sys.argv[0])
         exit(-1)
 
 
@@ -64,7 +65,7 @@ def confirmroot():
 def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
 
     banner()
-    confirmroot()
+    confirm_root()
 
     if debug:
         print(O + "[W] " + W + "Debug is enabled.")
