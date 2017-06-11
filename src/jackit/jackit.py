@@ -203,13 +203,10 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             targets = jack.devices
         else:
             targets = {}
-            for vic in value.split(","):
-                if int(vic) <= len(jack.devices):
-                    for addr, device in jack.devices.iteritems():
-                        if int(vic) == jack.devices['index']:
-                            targets[addr] = device
-                else:
-                    _print_err("Device %d key is out of range" % int(vic))
+            target_list = [int(x) for x in value.split(',')]
+            for addr, device in jack.devices.iteritems():
+                if device['index'] in target_list:
+                    targets[addr] = device
 
         launch_attacks(jack, targets, attack)
 
