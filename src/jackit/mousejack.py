@@ -14,6 +14,7 @@ class MouseJack(object):
         self.debug = debug
         self.devices = {}
         self.ping = [0x0f, 0x0f, 0x0f, 0x0f]
+        self.plugins = [microsoft, microsoft_enc, logitech]
         self.init_radio(disable_lna, reset)
 
     def _debug(self, text):
@@ -133,8 +134,7 @@ class MouseJack(object):
     def get_hid(self, p):
         if not p:
             return None
-        classes = [microsoft, microsoft_enc, logitech]
-        for hid in classes:
+        for hid in self.plugins:
             if hid.HID.fingerprint(p):
                 return hid.HID
         return None
