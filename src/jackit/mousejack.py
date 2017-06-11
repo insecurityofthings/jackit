@@ -13,24 +13,18 @@ class MouseJack(object):
         self.channel_index = 0
         self.debug = debug
         self.devices = {}
-        self.ping = '\x0f\x0f\x0f\x0f'
+        self.ping = [0x0f, 0x0f, 0x0f, 0x0f]
         self.init_radio(disable_lna, reset)
 
     def _debug(self, text):
         if self.debug:
             print(text)
 
-    def hex_to_ints(self, data):
+    def from_display(self, data):
         return [int(b, 16) for b in data.split(':')]
 
-    def hexify(self, data):
+    def to_display(self, data):
         return ':'.join('{:02X}'.format(x) for x in data)
-
-    def serialize_payload(self, p):
-        return str(bytearray(p))
-
-    def serialize_address(self, a):
-        return ''.join(chr(b) for b in a[::-1])
 
     def init_radio(self, disable_lna, reset):
         if reset:
@@ -56,12 +50,12 @@ class MouseJack(object):
             self.devices[address]['count']     = 1
             self.devices[address]['timestamp'] = time.time()
             self.devices[address]['channels']  = [self.channels[self.channel_index]]
-            self.devices[address]['address']   = self.hex_to_ints(address)
+            self.devices[address]['address']   = self.from_display(address)[::-1]
             self.devices[address]['device']    = self.get_hid(payload)
             self.devices[address]['payload']   = payload
 
     def scan(self, timeout=5.0):
-        self.radio.enter_promiscuous_mode('')
+        self.radio.enter_promiscuous_mode()
         self.radio.set_channel(self.channels[self.channel_index])
         dwell_time = 0.1
         last_tune = time.time()
@@ -76,15 +70,15 @@ class MouseJack(object):
             value = self.radio.receive_payload()
             if len(value) >= 5:
                 address, payload = value[0:5], value[5:]
-                self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], self.hexify(address), self.hexify(payload)))
-                self.add_device(self.hexify(address), payload)
+                self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], self.to_display(address), self.to_display(payload)))
+                self.add_device(self.to_display(address), payload)
 
         # TODO: Need to catch RuntimeError in jackit
         return self.devices
 
     def sniff(self, timeout, addr_string):
-        address = self.hex_to_ints(addr_string)
-        self.radio.enter_sniffer_mode(self.serialize_address(address))
+        address = self.from_display(addr_string)[::-1]
+        self.radio.enter_sniffer_mode(address)
         self.radio.set_channel(self.channels[self.channel_index])
         dwell_time = 0.1
         last_ping = time.time()
@@ -111,30 +105,30 @@ class MouseJack(object):
             if value[0] == 0:
                 last_ping = time.time()
                 payload = value[1:]
-                self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], addr_string, self.hexify(payload)))
+                self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], addr_string, self.to_display(payload)))
                 self.add_device(addr_string, payload)
 
         # TODO: Need to catch RuntimeError in jackit
         return self.devices
 
     def sniffer_mode(self, address):
-        self.radio.enter_sniffer_mode(self.serialize_address(address))
+        self.radio.enter_sniffer_mode(address)
 
     def find_channel(self, address):
-        self.radio.enter_sniffer_mode(self.serialize_address(address))
-        for channel in range(2, 84):
+        self.radio.enter_sniffer_mode(address)
+        for channel in self.channels:
             self.radio.set_channel(channel)
             if self.radio.transmit_payload(self.ping):
                 return channel
         return None
 
     def set_channel(self, channel):
-        self.current_channel = channel
+        self.channel = channel
         self.radio.set_channel(channel)
 
     def transmit_payload(self, payload):
-        self._debug("Sending: " + self.hexify(payload))
-        return self.radio.transmit_payload(self.serialize_payload(payload))
+        self._debug("Sending: " + self.to_display(payload))
+        return self.radio.transmit_payload(payload)
 
     def get_hid(self, p):
         if not p:
