@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+import keymap
 
 
 class DuckyParser(object):
@@ -55,7 +56,11 @@ class DuckyParser(object):
         "sleep": 0
     }
 
-    def __init__(self, attack_script, key_mapping):
+    def __init__(self, attack_script, layout=None):
+        if layout:
+            key_mapping = keymap.mapping[layout]
+        else:
+            key_mapping = keymap.mapping['us']
         self.hid_map.update(key_mapping)
         self.script = attack_script.split("\n")
 

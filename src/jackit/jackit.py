@@ -2,15 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-import datetime
 import os
+import sys
 import time
+import datetime
 import click
 import tabulate
-import keymap
 import duckyparser
 import mousejack
-import sys
 
 
 __version__ = 0.02
@@ -58,7 +57,7 @@ def confirm_root():
 @click.option('--script', default="", help="Ducky file to use for injection", type=click.Path())
 @click.option('--lowpower', is_flag=True, help="Disable LNA on CrazyPA")
 @click.option('--interval', default=5, help="Interval of scan in seconds, default to 5s")
-@click.option('--layout', default='us', help="Keyboard layout: %s" % ", ".join(keymap.mapping.keys()))
+@click.option('--layout', default='us', help="Keyboard layout: us, gb, de...")
 @click.option('--address', default="", help="Address of device to target attack")
 @click.option('--vendor', default="", help="Vendor of device to target (required when specifying address)")
 @click.option('--reset', is_flag=True, help="Reset CrazyPA dongle prior to initalization")
@@ -69,10 +68,6 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
 
     if debug:
         print(O + "[W] " + W + "Debug is enabled.")
-
-    if layout not in keymap.mapping.keys():
-        _print_err("Invalid keyboard layout selected.")
-        exit(-1)
 
     targeted = False
     if address and not vendor:
@@ -95,7 +90,12 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
         attack = ""
     else:
         f = open(script, 'r')
-        parser = duckyparser.DuckyParser(f.read(), keymap.mapping[layout])
+        try:
+            parser = duckyparser.DuckyParser(f.read(), layout=layout.lower())
+        except KeyError:
+            print("Invalid layout specified")
+            exit(-1)
+
         attack = parser.parse()
 
     # Initialize the radio

