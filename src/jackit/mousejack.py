@@ -54,13 +54,13 @@ class MouseJack(object):
             self.devices[address]['payload'] = payload
         else:
             self.devices[address] = {}
-            self.devices[address]['device']    = ''
-            self.devices[address]['payload']   = payload
+            self.devices[address]['index']     = len(self.devices)
             self.devices[address]['count']     = 1
+            self.devices[address]['timestamp'] = time.time()
             self.devices[address]['channels']  = [self.channels[self.channel_index]]
             self.devices[address]['address']   = [int(b, 16) for b in address.split(':')]
-            self.devices[address]['timestamp'] = time.time()
             self.devices[address]['device']    = self.get_hid(payload)
+            self.devices[address]['payload']   = payload
 
     def scan(self, timeout=5.0):
         self.radio.enter_promiscuous_mode('')
