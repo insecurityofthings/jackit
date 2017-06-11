@@ -55,6 +55,7 @@ def launch_attacks(jack, targets, attack):
             print(R + '[-] ' + W + "Target %s is not injectable. Skipping..." % (jack.hexify(address)))
             continue
 
+
 def scan_loop(jack, interval, targeted, address):
     if targeted:
         jack.sniff(interval, address)
