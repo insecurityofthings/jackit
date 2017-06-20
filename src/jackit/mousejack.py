@@ -43,7 +43,8 @@ class MouseJack(object):
             self.devices[address]['timestamp'] = time.time()
             if channel not in self.devices[address]['channels']:
                 self.devices[address]['channels'].append(channel)
-            self.devices[address]['device']  = self.get_hid(payload)
+            if self.devices[address]['device'] is None:
+                self.devices[address]['device']  = self.get_hid(payload)
             self.devices[address]['payload'] = payload
         else:
             self.devices[address] = {}
