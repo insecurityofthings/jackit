@@ -69,13 +69,15 @@ class MouseJack(object):
                 self.radio.set_channel(self.channels[self.channel_index])
                 last_tune = time.time()
 
-            value = self.radio.receive_payload()
+            try:
+                value = self.radio.receive_payload()
+            except RuntimeError as e:
+                value = []
             if len(value) >= 5:
                 address, payload = value[0:5], value[5:]
                 self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], self.to_display(address), self.to_display(payload)))
                 self.add_device(self.to_display(address), payload)
 
-        # TODO: Need to catch RuntimeError in jackit
         return self.devices
 
     def sniff(self, timeout, addr_string):
@@ -103,14 +105,17 @@ class MouseJack(object):
                 else:
                     last_ping = time.time()
 
-            value = self.radio.receive_payload()
+            try:
+                value = self.radio.receive_payload()
+            except RuntimeError as e:
+                value = [1]
+
             if value[0] == 0:
                 last_ping = time.time()
                 payload = value[1:]
                 self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], addr_string, self.to_display(payload)))
                 self.add_device(addr_string, payload)
 
-        # TODO: Need to catch RuntimeError in jackit
         return self.devices
 
     def sniffer_mode(self, address):

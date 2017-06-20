@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import datetime
+import platform
 import click
 import tabulate
 import duckyparser
@@ -94,15 +95,12 @@ def _print_err(text):
 
 def banner():
     print(r"""
-    / /  _______ _______ _______ _______ _______ _______  \ \
- / / /  |\     /|\     /|\     /|\     /|\     /|\     /|  \ \ \
-| | |   | +---+ | +---+ | +---+ | +---+ | +---+ | +---+ |  | | |
-| | |   | |   | | |   | | |   | | |   | | |   | | |   | |  | | |
-| | |   | |J  | | |a  | | |c  | | |k  | | |I  | | |t  | |  | | |
-| | |   | +---+ | +---+ | +---+ | +---+ | +---+ | +---+ |  | | |
- \ \ \  |/_____\|/_____\|/_____\|/_____\|/_____\|/_____\|  / / /
-    \ \                                                   / /
-    """)
+     ____.              __   .___  __
+    |    |____    ____ |  | _|   |/  |_
+    |    \__  \ _/ ___\|  |/ /   \   __\
+/\__|    |/ __ \\  \___|    <|   ||  |
+\________(____  /\___  >__|_ \___||__|
+              \/     \/     \/          """)
 
     print("JackIt Version %0.2f" % __version__)
     print("Created by %s" % __authors__)
@@ -111,7 +109,7 @@ def banner():
 
 def confirm_root():
     # make sure we are root
-    if os.getuid() != 0:
+    if os.getuid() != 0 and platform.system() != 'Darwin':
         _print_err("ERROR: You need to run as root!")
         _print_err("login as root (su root) or try sudo %s" % sys.argv[0])
         exit(-1)
