@@ -16,6 +16,7 @@ We tested with the following hardware:
 - [Logitech Marathon M705 Mouse](http://www.logitech.com/en-us/product/marathon-mouse-m705)
 - [Logitech Wave M510 Mouse](http://www.logitech.com/en-ca/product/wireless-mouse-m510)
 - [Logitech Wireless Gaming Mouse G700s](http://gaming.logitech.com/en-ca/product/g700s-rechargeable-wireless-gaming-mouse)
+- [Dell KM636 Wireless Mouse and Keyboard](http://www.dell.com/en-us/shop/dell-wireless-keyboard-and-mouse-km636-black/apd/580-adty/pc-accessories)
 
 Tested on Windows 8.1, Windows 10 and macOS 10.11. Let us know if it works or doesn't work on your device.
 
