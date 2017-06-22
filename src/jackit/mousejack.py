@@ -56,6 +56,10 @@ class MouseJack(object):
             self.devices[address]['device']    = self.get_hid(payload)
             self.devices[address]['payload']   = payload
 
+    def clear_devices(self):
+        self.devices = {}
+        return
+
     def scan(self, timeout=5.0):
         self.radio.enter_promiscuous_mode()
         self.radio.set_channel(self.channels[self.channel_index])
