@@ -45,7 +45,7 @@ class MouseJack(object):
                 self.devices[address]['channels'].append(channel)
             if self.devices[address]['device'] is None:
                 self.devices[address]['device']  = self.get_hid(payload)
-            self.devices[address]['payload'] = payload
+                self.devices[address]['payload'] = payload
         else:
             self.devices[address] = {}
             self.devices[address]['index']     = len(self.devices)

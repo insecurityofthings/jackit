@@ -16,9 +16,8 @@ class HID(microsoft.HID):
 
     def xor_crypt(self, payload):
         # MS encryption algorithm - as per KeyKeriki paper
-        raw_address = self.address[::-1][:5]
         for i in range(4, len(payload)):
-            payload[i] ^= raw_address[(i - 4) % 5]
+            payload[i] ^= self.address[(i - 4) % 5]
         return payload
 
     def frame(self, key={'hid': 0, 'mod': 0}):
