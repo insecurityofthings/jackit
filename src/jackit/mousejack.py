@@ -60,7 +60,7 @@ class MouseJack(object):
         self.devices = {}
         return
 
-    def scan(self, timeout=5.0):
+    def scan(self, timeout=5.0, callback=None):
         self.radio.enter_promiscuous_mode()
         self.radio.set_channel(self.channels[self.channel_index])
         dwell_time = 0.1
@@ -80,11 +80,14 @@ class MouseJack(object):
             if len(value) >= 5:
                 address, payload = value[0:5], value[5:]
                 self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], self.to_display(address), self.to_display(payload)))
-                self.add_device(self.to_display(address), payload)
+                if callback:
+                    callback(address, payload)
+                else:
+                    self.add_device(self.to_display(address), payload)
 
         return self.devices
 
-    def sniff(self, timeout, addr_string):
+    def sniff(self, timeout, addr_string, callback=None):
         address = self.from_display(addr_string)[::-1]
         self.radio.enter_sniffer_mode(address)
         self.radio.set_channel(self.channels[self.channel_index])
@@ -118,7 +121,10 @@ class MouseJack(object):
                 last_ping = time.time()
                 payload = value[1:]
                 self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], addr_string, self.to_display(payload)))
-                self.add_device(addr_string, payload)
+                if callback:
+                    callback(address, payload)
+                else:
+                    self.add_device(addr_string, payload)
 
         return self.devices
 
