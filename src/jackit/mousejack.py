@@ -75,7 +75,7 @@ class MouseJack(object):
 
             try:
                 value = self.radio.receive_payload()
-            except RuntimeError as e:
+            except RuntimeError:
                 value = []
             if len(value) >= 5:
                 address, payload = value[0:5], value[5:]
@@ -115,7 +115,7 @@ class MouseJack(object):
 
             try:
                 value = self.radio.receive_payload()
-            except RuntimeError as e:
+            except RuntimeError:
                 value = [1]
 
             if value[0] == 0:

