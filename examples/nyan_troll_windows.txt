@@ -1,0 +1,4 @@
+GUI r
+DELAY 300
+STRING explorer http://nyan.cat
+ENTER

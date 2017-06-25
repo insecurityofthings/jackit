@@ -6,9 +6,8 @@ _Do you like JackIt but don't want to carry around a laptop? Check [this](https:
 
 This is a partial implementation of Bastille's MouseJack exploit. See [mousejack.com](https://www.mousejack.com) for more details. Full credit goes to [Bastille's team](https://www.bastille.net/meet-mousejack-researchers) for discovering this issue and writing the libraries to work with the CrazyRadio PA dongle. Also, thanks to Samy Kamkar for [KeySweeper](http://samy.pl/keysweeper/), to Thorsten Schroeder and Max Moser for their work on [KeyKeriki](http://www.remote-exploit.org/articles/keykeriki_v2_0__8211_2_4ghz/) and to [Travis Goodspeed](http://travisgoodspeed.blogspot.ca/2011/02/promiscuity-is-nrf24l01s-duty.html). We stand on the shoulders of giants.
 
-To our knowledge, it should work on all Microsoft and Logitech devices based on the NRF24L01-series RFICs.
-
-We tested with the following hardware:
+We have successfully tested with the following hardware:
+- Microsoft Wireless Keyboard 800 (including keystroke logging)
 - Microsoft Wireless Mouse 1000
 - [Microsoft All-In-One Media Keyboard](https://www.microsoft.com/accessories/en-ca/products/keyboards/all-in-one-media-keyboard/n9z-00002)
 - [Microsoft Sculpt Ergonomic Mouse](https://www.microsoft.com/accessories/en-ca/products/mice/sculpt-ergonomic-mouse/l6v-00002)
@@ -17,9 +16,20 @@ We tested with the following hardware:
 - [Logitech Wave M510 Mouse](http://www.logitech.com/en-ca/product/wireless-mouse-m510)
 - [Logitech Wireless Gaming Mouse G700s](http://gaming.logitech.com/en-ca/product/g700s-rechargeable-wireless-gaming-mouse)
 - [Logitech K750 Wireless Keyboard](https://www.logitech.com/en-ca/product/k750-keyboard)
+- [Logitech K320 Wireless Keyboard](http://support.logitech.com/en_us/product/wireless-keyboard-k320)
 - [Dell KM636 Wireless Mouse and Keyboard](http://www.dell.com/en-us/shop/dell-wireless-keyboard-and-mouse-km636-black/apd/580-adty/pc-accessories)
 
-Tested on Windows 8.1, Windows 10 and macOS 10.11. Let us know if it works or doesn't work on your device.
+Known to not work with:
+- Logitech M185 and M187 mice (red unifying dongle C-U0010)
+- All older 27MHz devices, such as:
+  - Microsoft Wireless Optical Mouse 2.0
+  - Microsoft Wireless Notebook Optical Mouse 3000
+- Dell KM632 (on the roadmap)
+- AmazonBasics wireless devices (on the roadmap)
+- HP wireless devices (on the roapmap)
+- Lenovo wireless devices (on the roadmap)
+
+Tested on Windows 7/8.1/10 and macOS 10.11/10.12. Not tested against Linux. Let us know if it works or doesn't work on your device.
 
 Note: JackIt may not work if you have applied the [Logitech firmware update](http://forums.logitech.com/t5/Mice-and-Pointing-Devices/Logitech-Response-to-Unifying-Receiver-Research-Findings/td-p/1493878) or [KB3152550](https://support.microsoft.com/en-us/kb/3152550).
 
@@ -34,13 +44,14 @@ To use these scripts, you will need a [CrazyRadio PA adapter from Seed Studio](h
 After installing the firmware, you can install the Python 2 requirements via:
 
 ```
-sudo pip install -r requirements.txt
+cd ~/jackit
+sudo python setup.py
 ```
 
 Once your CrazyRadio PA is ready, you can launch JackIt via:
 
 ```
-sudo ./jackit.py
+sudo jackit
 ```
 
 Let the script run and detect the nearby devices, then press Ctrl-C to start your attack. The workflow is similar to [Wifite](https://github.com/derv82/wifite). By default, it will only monitor for devices. If you would like to inject, specify a Duckyscript payload file using --script. The payload should be in plain text, not compiled using the Duckyscript encoder.

