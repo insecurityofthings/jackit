@@ -1,3 +1,4 @@
+# From https://github.com/EmpireProject/Empire/blob/master/lib/modules/powershell/trollsploit/thunderstruck.py
 Function Invoke-Thunderstruck
 {
     [CmdletBinding()]
