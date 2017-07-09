@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function, absolute_import
+from six import iteritems
 import sys
 import duckyparser
 from plugins import microsoft_enc
@@ -57,7 +59,7 @@ class KeyLogger(object):
                         sys.stdout.flush()
 
     def hid_decode(self, key, status):
-        for letter, codes in self.mapping.iteritems():
+        for letter, codes in iteritems(self.mapping):
             if codes[0] == key and codes[1] == status:
                 if len(letter) > 1:
                     return '[' + letter + ']'

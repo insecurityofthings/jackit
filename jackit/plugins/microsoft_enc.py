@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import microsoft
+from __future__ import print_function, absolute_import
+from plugins import microsoft
 
 
 class HID(microsoft.HID):

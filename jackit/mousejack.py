@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function, absolute_import
 import time
 from lib import nrf24, nrf24_reset
 from plugins import logitech, microsoft, microsoft_enc, amazon

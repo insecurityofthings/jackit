@@ -55,7 +55,7 @@ class HID(object):
                     key['frames'].append([self.frame(), 0])
             elif key['sleep']:
                 count = int(key['sleep']) / 10
-                for i in range(0, count):
+                for i in range(0, int(count)):
                     key['frames'].append([self.keepalive[:], 10])
 
     @classmethod

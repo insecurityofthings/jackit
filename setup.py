@@ -34,9 +34,9 @@ setup(
     author='phikshun and infamy',
     author_email='',
     url='https://github.com/insecurityofthings/jackit',
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
-    py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
+    packages=find_packages('jackit'),
+    package_dir={'': 'jackit'},
+    py_modules=[splitext(basename(path))[0] for path in glob('jackit/*.py')],
     include_package_data=True,
     zip_safe=False,
     classifiers=[
@@ -62,7 +62,7 @@ setup(
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
     install_requires=[
-        'pyusb', 'click', 'tabulate',
+        'pyusb', 'click', 'tabulate', 'six', 'pyusb'
     ],
     entry_points={
         'console_scripts': [

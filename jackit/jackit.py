@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
+from six import iteritems
 import os
 import sys
 import time
@@ -29,7 +30,7 @@ GR = '\033[37m'  # gray
 
 
 def launch_attacks(jack, targets, attack, use_ping=True):
-    for addr_string, target in targets.iteritems():
+    for addr_string, target in iteritems(targets):
         payload  = target['payload']
         channels = target['channels']
         address  = target['address']
@@ -75,7 +76,7 @@ def scan_loop(jack, interval, targeted, address):
     print("")
 
     pretty_devices = []
-    for addr_string, device in jack.devices.iteritems():
+    for addr_string, device in iteritems(jack.devices):
         if device['device']:
             device_name = device['device'].description()
         else:
@@ -234,7 +235,7 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autop
         else:
             targets = {}
             target_list = [int(x) for x in value.split(',')]
-            for addr_string, device in jack.devices.iteritems():
+            for addr_string, device in iteritems(jack.devices):
                 if device['index'] in target_list:
                     targets[addr_string] = device
 
