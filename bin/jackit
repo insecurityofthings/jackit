@@ -10,9 +10,9 @@ import datetime
 import platform
 import click
 import tabulate
-import duckyparser
-import mousejack
-import keylogger
+from jackit import duckyparser
+from jackit import mousejack
+from jackit import keylogger
 
 
 __version__ = 1.00

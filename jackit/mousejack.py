@@ -2,8 +2,8 @@
 
 from __future__ import print_function, absolute_import
 import time
-from lib import nrf24, nrf24_reset
-from plugins import logitech, microsoft, microsoft_enc, amazon
+from jackit.lib import nrf24, nrf24_reset
+from jackit.plugins import logitech, microsoft, microsoft_enc, amazon
 
 
 class MouseJack(object):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function, absolute_import
-from plugins import microsoft
+from jackit.plugins import microsoft
 
 
 class HID(microsoft.HID):

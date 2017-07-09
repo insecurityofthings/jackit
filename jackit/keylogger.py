@@ -3,8 +3,8 @@
 from __future__ import print_function, absolute_import
 from six import iteritems
 import sys
-import duckyparser
-from plugins import microsoft_enc
+from jackit import duckyparser
+from jackit.plugins import microsoft_enc
 
 # some console colours
 W = '\033[0m'  # white (normal)
