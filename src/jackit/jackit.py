@@ -141,15 +141,15 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autop
 
     targeted = False
     if address and not vendor:
-        _print_err("Please use --vendor option to specify either Logitech or Microsoft.")
+        _print_err("Please use --vendor option to specify either Logitech, Microsoft or Amazon.")
         exit(-1)
     elif vendor and not address:
         _print_err("Please use --address option when specifying a vendor.")
         exit(-1)
     elif vendor and address:
         vendor = vendor.lower()
-        if not vendor.startswith("l") and not vendor.startswith("m"):
-            _print_err("Unknown vendor: specify either Microsoft of Logitech.")
+        if not vendor.startswith("l") and not vendor.startswith("m") and not vendor.startswith("a"):
+            _print_err("Unknown vendor: specify either Microsoft, Logitech or Amazon.")
             exit(-1)
         else:
             targeted = True
@@ -206,6 +206,8 @@ def cli(debug, script, lowpower, interval, layout, address, vendor, reset, autop
                 jack.add_device(address, [0, 0xC2, 0, 0, 0, 0, 0, 0, 0, 0])
             if vendor.startswith("m"):
                 jack.add_device(address, [])
+            if vendor.startswith("a"):
+                jack.add_device(address, [0, 0, 0, 0, 0, 0])
         else:
             print(G + "[+] " + W + 'Starting scan...')
 

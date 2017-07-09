@@ -2,7 +2,7 @@
 
 import time
 from lib import nrf24, nrf24_reset
-from plugins import logitech, microsoft, microsoft_enc
+from plugins import logitech, microsoft, microsoft_enc, amazon
 
 
 class MouseJack(object):
@@ -14,7 +14,7 @@ class MouseJack(object):
         self.debug = debug
         self.devices = {}
         self.ping = [0x0f, 0x0f, 0x0f, 0x0f]
-        self.plugins = [microsoft, microsoft_enc, logitech]
+        self.plugins = [microsoft, microsoft_enc, logitech, amazon]
         self.init_radio(disable_lna, reset)
 
     def _debug(self, text):

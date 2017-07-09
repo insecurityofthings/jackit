@@ -18,6 +18,7 @@ We have successfully tested with the following hardware:
 - [Logitech K750 Wireless Keyboard](https://www.logitech.com/en-ca/product/k750-keyboard)
 - [Logitech K320 Wireless Keyboard](http://support.logitech.com/en_us/product/wireless-keyboard-k320)
 - [Dell KM636 Wireless Mouse and Keyboard](http://www.dell.com/en-us/shop/dell-wireless-keyboard-and-mouse-km636-black/apd/580-adty/pc-accessories)
+- [AmazonBasics MG-0975 Wireless Mouse](https://www.amazon.com/AmazonBasics-Wireless-Mouse-Receiver-MGR0975/dp/B005EJH6Z4)
 
 Known to not work with:
 - Logitech M185 and M187 mice (red unifying dongle C-U0010)
@@ -25,8 +26,7 @@ Known to not work with:
   - Microsoft Wireless Optical Mouse 2.0
   - Microsoft Wireless Notebook Optical Mouse 3000
 - Dell KM632 (on the roadmap)
-- AmazonBasics wireless devices (on the roadmap)
-- HP wireless devices (on the roapmap)
+- HP wireless devices (on the roadmap)
 - Lenovo wireless devices (on the roadmap)
 
 Tested on Windows 7/8.1/10 and macOS 10.11/10.12. Not tested against Linux. Let us know if it works or doesn't work on your device.
