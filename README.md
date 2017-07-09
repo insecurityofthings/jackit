@@ -41,11 +41,12 @@ We work in the security industry and often it is necessary to demonstrate risk i
 
 To use these scripts, you will need a [CrazyRadio PA adapter from Seed Studio](https://www.seeedstudio.com/item_detail.html?p_id=2104). You will also need to flash the firmware of the adapter using [Bastille's MouseJack research tools](https://github.com/RFStorm/mousejack). Please follow their instructions for updating the firmware before continuing.
 
-After installing the firmware, you can install the Python 2 requirements via:
+After installing the firmware, you can install JackIt via:
 
 ```
-cd ~/jackit
-sudo python setup.py
+git clone https://github.com/insecurityofthings/jackit.git
+cd jackit
+pip install -e .
 ```
 
 Once your CrazyRadio PA is ready, you can launch JackIt via:
