@@ -15,6 +15,7 @@ We have successfully tested with the following hardware:
 - [Logitech Marathon M705 Mouse](http://www.logitech.com/en-us/product/marathon-mouse-m705)
 - [Logitech Wave M510 Mouse](http://www.logitech.com/en-ca/product/wireless-mouse-m510)
 - [Logitech Wireless Gaming Mouse G700s](http://gaming.logitech.com/en-ca/product/g700s-rechargeable-wireless-gaming-mouse)
+- [Logitech Wireless M325 Mouse](http://www.logitech.com/en-us/product/wireless-mouse-m325)
 - [Logitech K750 Wireless Keyboard](https://www.logitech.com/en-ca/product/k750-keyboard)
 - [Logitech K320 Wireless Keyboard](http://support.logitech.com/en_us/product/wireless-keyboard-k320)
 - [Dell KM636 Wireless Mouse and Keyboard](http://www.dell.com/en-us/shop/dell-wireless-keyboard-and-mouse-km636-black/apd/580-adty/pc-accessories)
