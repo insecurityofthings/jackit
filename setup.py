@@ -9,7 +9,7 @@ setup(
     name='JackIt',
     version='0.1.0',
     author='infamy and phikshun',
-    packages=['jackit', 'jackit.test'],
+    packages=['jackit', 'jackit.lib', 'jackit.plugins'],
     scripts=['bin/jackit'],
     url='https://github.com/insecurityofthings/jackit',
     license='BSD',
