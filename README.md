@@ -9,6 +9,7 @@ This is a partial implementation of Bastille's MouseJack exploit. See [mousejack
 We have successfully tested with the following hardware:
 - Microsoft Wireless Keyboard 800 (including keystroke logging)
 - Microsoft Wireless Mouse 1000
+- [Microsoft Wireless Mobile Mouse 3500](https://www.microsoft.com/accessories/fr-fr/products/mice/wireless-mobile-mouse-3500/gmf-00277?part=GMF-00277)
 - [Microsoft All-In-One Media Keyboard](https://www.microsoft.com/accessories/en-ca/products/keyboards/all-in-one-media-keyboard/n9z-00002)
 - [Microsoft Sculpt Ergonomic Mouse](https://www.microsoft.com/accessories/en-ca/products/mice/sculpt-ergonomic-mouse/l6v-00002)
 - [Logitech Wireless Touch Keyboard K400r](http://www.logitech.com/en-ca/product/wireless-touch-keyboard-k400r)
