@@ -41,7 +41,7 @@ We work in the security industry and often it is necessary to demonstrate risk i
 
 ## How
 
-To use these scripts, you will need a [CrazyRadio PA adapter from Seed Studio](https://www.seeedstudio.com/item_detail.html?p_id=2104). You will also need to flash the firmware of the adapter using [Bastille's MouseJack research tools](https://github.com/RFStorm/mousejack). Please follow their instructions for updating the firmware before continuing.
+To use these scripts, you will need a [CrazyRadio PA adapter from Seeed Studio](https://www.seeedstudio.com/item_detail.html?p_id=2104). You will also need to flash the firmware of the adapter using [Bastille's MouseJack research tools](https://github.com/RFStorm/mousejack). Please follow their instructions for updating the firmware before continuing.
 
 After installing the firmware, you can install JackIt via:
 
